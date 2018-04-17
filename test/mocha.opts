@@ -1,0 +1,6 @@
+-R spec
+--ui bdd
+--recursive
+--require babel-register
+--require babel-polyfill
+--exit
