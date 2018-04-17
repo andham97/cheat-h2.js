@@ -1,0 +1,44 @@
+{
+  "name": "cheat-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --exec babel-node src/index.js",
+    "test": "mocha --require babel-polyfill --require babel-register --recursive"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andham97/cheat-js.git"
+  },
+  "author": "Andreas Hammer, Dina Rosvoll, Oda Steinland Skaug",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andham97/cheat-js/issues"
+  },
+  "homepage": "https://github.com/andham97/cheat-js#readme",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-flow": "^6.23.0",
+    "chai": "^4.1.2",
+    "flow-bin": "^0.70.0",
+    "mocha": "^5.1.0",
+    "nodemon": "^1.17.3"
+  },
+  "babel": {
+    "plugins": [
+      "transform-class-properties",
+      "transform-object-rest-spread"
+    ],
+    "ignore": [
+      "node_modules/**/*.js"
+    ],
+    "presets": [
+      "env",
+      "flow"
+    ]
+  }
+}
