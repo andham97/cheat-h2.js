@@ -1,3 +1,2 @@
-export default () => {
-  return 100;
-}
+import http2 from './src';
+export default http2;

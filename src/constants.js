@@ -1,0 +1,38 @@
+export const FrameFlags = {
+  0x0: {
+    END_STREAM: 0x1,
+    PADDED: 0x8
+  },
+  0x1: {
+    END_STREAM: 0x1,
+    END_HEADERS: 0x4,
+    PADDED: 0x8,
+    PRIORITY: 0x20
+  },
+  0x4: {
+    ACK: 0x1
+  },
+  0x5: {
+    END_HEADERS: 0x4,
+    PADDED: 0x8
+  },
+  0x6: {
+    ACK: 0x1
+  },
+  0x9: {
+    END_HEADERS: 0x4
+  }
+}
+
+export const FrameTypes = {
+  DATA: 0x0,
+  HEADERS: 0x1,
+  PRIORITY: 0x2,
+  RST_STREAM: 0x3,
+  SETTINGS: 0x4,
+  PUSH_PROMISE: 0x5,
+  PING: 0x6,
+  GOAWAY: 0x7,
+  WINDOW_UPDATE: 0x8,
+  CONTINUATION: 0x9
+}

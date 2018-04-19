@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --exec babel-node src/index.js",
+    "start": "nodemon --exec babel-node server.js",
     "test": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov"
   },
   "repository": {
@@ -42,5 +42,8 @@
     "flow-bin": "^0.70.0",
     "mocha": "^5.1.0",
     "nodemon": "^1.17.3"
+  },
+  "dependencies": {
+    "node-bitarray": "^0.1.0"
   }
 }
