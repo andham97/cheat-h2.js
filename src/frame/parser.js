@@ -16,6 +16,7 @@ export const decode = (data) => {
         sid: sid,
         payload: payload
       });
+    case FrameTypes.SETTINGS
   }
 }
 
