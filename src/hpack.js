@@ -347,4 +347,37 @@ export default class HuffmanTable {
       }
     }
   }
+
+  decode(buffer){
+    let node = this.genTree()
+
+    for(let i = 0; i <buffer.length; i++){
+      let result = buffer[i];
+
+      for(let j = 7; j >= 0; j--){
+        if((result >> j) != 1){
+          node = node[0];
+        } else {
+          node = node[1];
+        }
+      }
+    }
+  }
+
+  encode(buffer){
+    let result = [];
+    let bitIndex = 0;
+    let data;
+
+    for(let i = 0; i < buffer.length; i++){
+      let huffman = huffmann_table[buffer[i]]
+      let width = (8 - bitIndex);
+
+      while (bit > 0) {
+        if(width > bit){
+
+        }
+      }
+    }
+  }
 }
