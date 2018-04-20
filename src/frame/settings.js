@@ -1,21 +1,33 @@
-import { FrameTypes } from '../constants';
+import { FrameTypes, ErrorCodes, SettingsEntries } from '../constants';
+import ConnectionError from '../error';
 import Frame from './frame';
 
 export default class SettingsFrame extends Frame {
-  data;
+  settings = {};
 
   constructor(opts){
     super(FrameTypes.SETTINGS, opts);
-    
+    if(this.payload.length % 6 != 0)
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-6 octet frame size');
+    for(let i = 0; i < this.payload.length; i += 6){
+      this.settings[SettingsEntries.keys[this.payload.readUIntBE(i, 2)]] = this.payload.readUIntBE(i+2, 4);
+    }
+  }
 
-    // if(this.flags.PADDED){
-    //   let paddingLength = this.payload.readUIntBE(0, 1);
-    //   this.data = this.payload.slice(1, this.payload.length - paddingLength);
-    //   let padding = this.payload.slice(this.payload.length - paddingLength);
-    //   if(Buffer.compare(padding, new Buffer(padding.length)))
-    //     throw new Error('Padding error, non-zero padding');
-    // }
-    // else
-    //   this.data = Buffer.concat([new Buffer(0), this.payload]);
+  setSetting(setting, value){
+    this.settings[SettingsEntries.keys[setting]] = value;
+  }
+
+  getPayload(){
+    this.payload = new Buffer(0);
+    if(!this.flags.ACK){
+      Object.entries(this.settings).forEach(f => {
+        let tempBuff = new Buffer(6);
+        tempBuff.writeUIntBE(SettingsEntries[f[0]], 0, 2);
+        tempBuff.writeUIntBE(f[1], 2, 4);
+        this.payload = Buffer.concat([this.payload, tempBuff]);
+      });
+    }
+    return super.getPayload();
   }
 }
