@@ -5,6 +5,7 @@ export default class Frame {
   type;
   flags = 0x0;
   payload = new Buffer(0);
+  session;
 
   constructor(type, opts){
     this.type = type;

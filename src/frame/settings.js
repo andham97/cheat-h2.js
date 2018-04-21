@@ -8,7 +8,7 @@ export default class SettingsFrame extends Frame {
   constructor(opts){
     super(FrameTypes.SETTINGS, opts);
     if(this.payload.length % 6 != 0)
-      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-6 octet frame size');
+      session.emit('error', new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-6 octet frame size'));
     for(let i = 0; i < this.payload.length; i += 6){
       this.settings[SettingsEntries.keys[this.payload.readUIntBE(i, 2)]] = this.payload.readUIntBE(i+2, 4);
     }

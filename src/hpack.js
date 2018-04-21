@@ -321,47 +321,51 @@ const huffmann_table = [
   { code: 0x3fffffff, length: 30 }
 ];
 
+const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
+
 export default class HuffmanTable {
-  root;
+  root = [];
 
   constructor(){
-    this.root = [];
     this.genTree();
   }
 
   genTree(){
-    for(let i = 0; i < huffmann_table.length; i ++){
+    for(let i = 0; i < huffmann_table.length; i++){
       let node = this.root;
       let huffman = huffmann_table[i];
       for(let j = huffman.length-1; j >= 0; j--){
-        let next = huffman.code & (0x1 << j) != 0;
-        if(next){
-          if(!node[1])
-            node[1] = (j == 0 ? i : []);
+        let next = (huffman.code & (0x1 << j)) != 0 ? 1 : 0;
+        if(j == 0){
+          node[next] = i;
+          continue;
         }
-        else {
-          if(!node[0])
-            node[0] = (j == 0 ? i : []);
-        }
+        if(!node[next])
+          node[next] = [];
         node = node[next ? 1 : 0];
       }
     }
   }
 
   decode(buffer){
-    let node = this.genTree()
-
+    let node = this.root;
+    let ret = new Buffer(0);
     for(let i = 0; i <buffer.length; i++){
-      let result = buffer[i];
-
+      let byte = buffer[i];
+      if(byte < 62 && node == this.root)
+        ret = Buffer.concat([ret, new Buffer([static_table[byte-1]])]);
       for(let j = 7; j >= 0; j--){
-        if((result >> j) != 1){
-          node = node[0];
-        } else {
+        if((byte & (0x1 << j)) != 0)
           node = node[1];
+        else
+          node = node[0];
+        if(typeof node == 'number'){
+          ret = Buffer.concat([ret, new Buffer([node])]);
+          node = this.root;
         }
       }
     }
+    return ret;
   }
 
   encode(buffer){
@@ -381,3 +385,5 @@ export default class HuffmanTable {
     }
   }
 }
+
+//console.log(new HuffmanTable().decode(testBuffer).toString());
