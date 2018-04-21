@@ -1,4 +1,4 @@
-const static_table = [
+let static_table = [
   [':authority', ''],
   [':method', 'GET'],
   [':method', 'POST'],
@@ -60,8 +60,9 @@ const static_table = [
   ['vary', ''],
   ['via', ''],
   ['www-authenticate', '']
-]
-const huffmann_table = [
+];
+
+const huffman_table = [
   { code: 0x1ff8,     length: 13 },
   { code: 0x7fffd8,   length: 23 },
   { code: 0xfffffe2,  length: 28 },
@@ -321,69 +322,403 @@ const huffmann_table = [
   { code: 0x3fffffff, length: 30 }
 ];
 
-const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
+const header_field_type = {
+  INDEXED: 0,
+  LITERAL_INC: 1,
+  LITERAL: 2,
+  LITERAL_NEVER: 3,
+  HEADER_TABLE_SIZE: 4
+};
 
-export default class HuffmanTable {
-  root = [];
-
-  constructor(){
-    this.genTree();
+const header_field_type_spec = [
+  {
+    prefix: 7,
+    mask: 0x80
+  },
+  {
+    prefix: 6,
+    mask: 0x40
+  },
+  {
+    prefix: 4,
+    mask: 0x00
+  },
+  {
+    prefix: 4,
+    mask: 0x10
+  },
+  {
+    prefix: 5,
+    mask: 0x20
   }
+];
 
-  genTree(){
-    for(let i = 0; i < huffmann_table.length; i++){
-      let node = this.root;
-      let huffman = huffmann_table[i];
-      for(let j = huffman.length-1; j >= 0; j--){
-        let next = (huffman.code & (0x1 << j)) != 0 ? 1 : 0;
-        if(j == 0){
-          node[next] = i;
-          continue;
-        }
-        if(!node[next])
-          node[next] = [];
-        node = node[next ? 1 : 0];
+const literal_headers = {
+  'content-length': true,
+  'content-MD5': true,
+  'forwarded': true,
+  'referer': true
+};
+
+const literal_headers_never_indexed = {
+  'set-cookie': true,
+  'authorization': true,
+  'from': true,
+  'proxy-authorization': true,
+  'etag': true,
+  'location': true
+};
+
+const read_byte = (buffer) => {
+  return buffer[buffer.cur_byte++];
+}
+
+const read_bytes = (buffer, len) => {
+  let bytes = buffer.slice(buffer.cur_byte, buffer.cur_byte + len);
+  buffer.cur_byte += len;
+  return bytes;
+}
+
+const huffman_generate_tree = () => {
+  let root = [];
+  for(let i = 0; i < huffman_table.length; i++){
+    let node = root;
+    let huffman = huffman_table[i];
+    for(let j = huffman.length-1; j >= 0; j--){
+      let next = (huffman.code & (0x1 << j)) != 0 ? 1 : 0;
+      if(j == 0){
+        node[next] = i;
+        continue;
+      }
+      if(!node[next])
+        node[next] = [];
+      node = node[next ? 1 : 0];
+    }
+  }
+  return root;
+}
+
+const huffman_decode = (buffer) => {
+  let node = huffman_root;
+  let ret = [];
+  for(let i = 0; i <buffer.length; i++){
+    let byte = buffer[i];
+    for(let j = 7; j >= 0; j--){
+      if((byte & (0x1 << j)) != 0)
+        node = node[1];
+      else
+        node = node[0];
+      if(typeof node == 'number'){
+        ret.push(node);
+        node = huffman_root;
       }
     }
   }
+  return new Buffer(ret);
+}
 
-  decode(buffer){
-    let node = this.root;
-    let ret = new Buffer(0);
-    for(let i = 0; i <buffer.length; i++){
-      let byte = buffer[i];
-      if(byte < 62 && node == this.root)
-        ret = Buffer.concat([ret, new Buffer([static_table[byte-1]])]);
-      for(let j = 7; j >= 0; j--){
-        if((byte & (0x1 << j)) != 0)
-          node = node[1];
-        else
-          node = node[0];
-        if(typeof node == 'number'){
-          ret = Buffer.concat([ret, new Buffer([node])]);
-          node = this.root;
-        }
+const decode_integer = (buffer, prefix) => {
+  let limit = Math.pow(2, prefix) - 1;
+  let i = read_byte(buffer) & limit;
+  if(i < limit)
+    return i;
+  let b, m = 0;
+  do {
+    b = read_byte(buffer);
+    i += (b & 127) * Math.pow(2, m);
+    m += 7;
+  } while((b & 128) == 128);
+  return i;
+}
+
+const decode_string = (buffer) => {
+  let sByte = buffer[buffer.cur_byte];
+
+  if((sByte & 0x80) != 0)
+    return huffman_decode(read_bytes(buffer, decode_integer(buffer, 7))).toString();
+  else
+    return read_bytes(buffer, decode_integer(buffer, 7)).toString();
+}
+
+const huffman_encode = (buffer) => {
+  let result = [];
+  let bitIndex = 7;
+  let curByte = 0;
+
+  for(let i = 0; i < buffer.length; i++){
+    let huffman = huffman_table[buffer[i]];
+    let code = huffman.code;
+    let len = huffman.length;
+    for(let i = len-1; i >= 0; i--){
+      let bit = (code & (0x1 << i));
+      if(bit != 0)
+        curByte |= (0x1 << bitIndex);
+      bitIndex--;
+      if(bitIndex < 0){
+        result.push(curByte);
+        curByte = 0;
+        bitIndex = 7;
       }
     }
-    return ret;
   }
+  if(bitIndex != 7){
+    let s = huffman_table[256].length - (bitIndex + 1);
+    curByte += (huffman_table[256].code >> s);
+    result.push(curByte);
+  }
+  return new Buffer(result);
+}
 
-  encode(buffer){
-    let result = [];
-    let bitIndex = 0;
-    let data;
+const encode_integer = (num, prefix) => {
+  let limit = Math.pow(2, prefix) - 1;
+  if(num < limit)
+    return new Buffer([num]);
+  let octs = [limit];
+  num -= limit;
+  while(num >= 128){
+    octs.push((num % 128) | 0x80);
+    num >>= 7;
+  }
+  octs.push(num);
+  return new Buffer(octs);
+}
 
-    for(let i = 0; i < buffer.length; i++){
-      let huffman = huffmann_table[buffer[i]]
-      let width = (8 - bitIndex);
-
-      while (bit > 0) {
-        if(width > bit){
-
-        }
-      }
-    }
+const encode_string = (sBuffer, huffman) => {
+  if(huffman){
+    let hBuffer = huffman_encode(sBuffer);
+    let len = encode_integer(hBuffer.length, 7);
+    len[0] |= 0x80;
+    return Buffer.concat([len, hBuffer]);
+  }
+  else {
+    let len = encode_integer(sBuffer, 7);
+    return Buffer.concat([len, sBuffer]);
   }
 }
 
-//console.log(new HuffmanTable().decode(testBuffer).toString());
+const huffman_root = huffman_generate_tree();
+
+class Entry {
+  name;
+  value;
+  size;
+
+  constructor(name, value){
+    this.name = name.toLowerCase();
+    this.value = value;
+    this.size = this.name.length + this.value.length + 32;
+  }
+}
+
+class HeaderTable {
+  entries;
+  max_size;
+  size;
+
+  constructor(options){
+    if(!options)
+      options = {};
+    this.max_size = options.HEADER_TABLE_SIZE || 4096;
+    this.entries = [];
+    this.size = 0;
+  }
+
+  add(entry){
+    if(entry.size > this.max_size){
+      this.size = 0;
+      this.entries = [];
+      return;
+    }
+    while((this.size + entry.size) > this.max_size){
+      this.size -= this.entries[this.entries.length - 1].size;
+      this.entries.splice(this.entries.length - 1, 1);
+    }
+    this.entries = [entry].concat(this.entries);
+    this.size += entry.size;
+  }
+
+  get(index){
+    if(index < 1 || index > static_table.length + this.entries.length)
+      return new Error('OMG');
+    if(index < static_table.length)
+      return static_table[index - 1];
+    else
+      return this.entries[index - static_table.length - 1];
+  }
+
+  find(name, value){
+    let index = 0;
+    for(let i = 0; i < static_table.length; i++){
+      if(static_table[i][0] == name){
+        if(static_table[i][1] == value)
+          return {
+            index: i + 1,
+            exact: true
+          }
+        else
+          index = i + 1;
+      }
+    }
+    for(let i = 0; i < this.entries.length; i++){
+      if(this.entries[i].name == name){
+        if(this.entries[i].value == value)
+          return {
+            index: i + static_table.length + 1,
+            exact: true
+          }
+        else
+          index = i + static_table.length + 1;
+      }
+    }
+    return {
+      index: index,
+      exact: false
+    };
+  }
+
+  set_max_size(new_size){
+    new_size = Math.min(new_size, 4096);
+    if(this.max_size == new_size)
+      return;
+    while(this.size > new_size){
+      this.size -= this.entries[this.entries.length - 1].size;
+      this.entries.splice(this.entries.length - 1, 1);
+    }
+    this.max_size = new_size;
+  }
+}
+
+export default class Context {
+  huffman;
+  header_table;
+
+  constructor(options){
+    this.huffman = (options && options.huffman ? true : false);
+    this.header_table = new HeaderTable();
+  }
+
+  compress(headers){
+    let buffer = new Buffer(0);
+    for(let i = 0; i < headers.length; i++){
+      let header = headers[i];
+      let table_lookup = this.header_table.find(header.name, header.value);
+      if(table_lookup.exact){
+        let header_field_indexed_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.INDEXED].prefix);
+        header_field_indexed_buffer[0] |= header_field_type_spec[header_field_type.INDEXED].mask;
+        buffer = Buffer.concat([buffer, header_field_indexed_buffer]);
+      }
+      else {
+        if(table_lookup.index != 0){
+          if(literal_headers_never_indexed[header.name]){
+            let header_field_literal_never_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_NEVER].prefix);
+            header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
+            let header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_never_index_buffer, header_field_literal_never_value_buffer]);
+          }
+          else if(literal_headers[header.name]){
+            let header_field_literal_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL].prefix);
+            header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
+            let header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_buffer, header_field_literal_value_buffer]);
+          }
+          else {
+            let header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
+            header_field_literal_inc_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+            let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
+          }
+        }
+        else {
+          if(literal_headers_never_indexed[header.name]){
+            let header_field_literal_never_index_buffer = new Buffer(1);
+            header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
+            let header_field_literal_never_name_buffer = encode_string(new Buffer(header.name), true);
+            let header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_never_index_buffer, header_field_literal_never_name_buffer, header_field_literal_never_value_buffer]);
+          }
+          else if(literal_headers[header.name]){
+            let header_field_literal_index_buffer = new Buffer(1);
+            header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
+            let header_field_literal_name_buffer = encode_string(new Buffer(header.name), true);
+            let header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_index_buffer, header_field_literal_name_buffer, header_field_literal_value_buffer]);
+          }
+          else {
+            let header_field_literal_inc_index_buffer = new Buffer(1);
+            header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+            let header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
+            let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, header_field_literal_inc_value_buffer]);
+          }
+        }
+      }
+    }
+    return buffer;
+  }
+
+  decompress(buffer){
+    let headers = [];
+    buffer.cur_byte = 0;
+    while(buffer.cur_byte < buffer.length){
+      let fByte = buffer[buffer.cur_byte];
+      let type = -1;
+      for(let i = 0; i < header_field_type_spec.length; i++){
+        if((fByte & header_field_type_spec[i].mask) != 0){
+          type = i;
+          break;
+        }
+      }
+      switch(type) {
+        case header_field_type.INDEXED:
+          let index = decode_integer(buffer, 7);
+          let header = this.header_table.get(index);
+          headers.push(header);
+          break;
+        case header_field_type.LITERAL_INC:
+          if((fByte & 0x3f) != 0){
+            let index = decode_integer(buffer, 6);
+            let header_field = this.header_table.get(index);
+            let value = decode_string(buffer);
+            let entry = new Entry(header_field.name, value);
+            headers.push(entry);
+            this.header_table.add(entry);
+          }
+          else {
+            buffer.cur_byte++;
+            let name = decode_string(buffer);
+            let value = decode_string(buffer);
+            let entry = new Entry(name, value);
+            headers.push(entry);
+            this.header_table.add(entry);
+          }
+          break;
+        case header_field_type.LITERAL_NEVER:
+        case header_field_type.LITERAL:
+          if((fByte & 0xf) != 0){
+            let index = decode_integer(buffer, 4);
+            let header_field = this.header_table.get(index);
+            let value = decode_string(buffer);
+            headers.push(new Entry(header_field.name, value));
+          }
+          else {
+            buffer.cur_byte++;
+            let name = decode_string(buffer);
+            let value = decode_string(buffer);
+            headers.push(new Entry(name, value));
+          }
+          break;
+        case header_field_type.HEADER_TABLE_SIZE:
+          let new_max_header_table_size = decode_integer(buffer, 5);
+          this.header_table.set_max_size(new_max_header_table_size);
+          break;
+      }
+    }
+    return headers;
+  }
+}
+
+for(let i = 0; i < static_table.length; i++){
+  static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
+}
+
+//const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
