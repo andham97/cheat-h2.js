@@ -2,17 +2,9 @@ import { FrameTypes, FrameFlags, ErrorCodes } from '../constants';
 import ConnectionError from '../error';
 import DataFrame from './data';
 import SettingsFrame from './settings';
-import HuffmanTable from '../hpack';
+import HeadersFrame from './header';
 
 export default class Parser {
-  session;
-  table;
-
-  constructor(sess){
-    this.session = sess;
-    this.table = new HuffmanTable();
-  }
-
   decode(data) {
     let length = data.readUIntBE(0, 3);
     let type = data.readUIntBE(3, 1);
@@ -24,8 +16,7 @@ export default class Parser {
     let pref = {
       flags: flags,
       sid: sid,
-      payload: payload,
-      session: this.session
+      payload: payload
     };
     switch(type){
       case FrameTypes.DATA:
@@ -33,8 +24,11 @@ export default class Parser {
 
       case FrameTypes.SETTINGS:
         return new SettingsFrame(pref);
+
+      case FrameTypes.HEADERS:
+        return new HeadersFrame(pref);
     }
-    console.log({...pref, type: type, length: length, session: null});
+    console.log({...pref, type: type, length: length});
     if(type == 0x1){
       console.log("start");
       console.log(this.table.decompress(payload));
