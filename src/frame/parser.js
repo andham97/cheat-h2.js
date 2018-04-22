@@ -3,6 +3,12 @@ import ConnectionError from '../error';
 import DataFrame from './data';
 import SettingsFrame from './settings';
 import HeadersFrame from './header';
+import RST_StreamFrame from './rst_stream';
+import PingFrame from './ping';
+import GoawayFrame from './go_away';
+import ContinuationFrame from './continuation';
+import WindowUpdateFrame from './window_update';
+import Push_PromiseFrame from './push_promise';
 
 export default class Parser {
   decode(data) {
@@ -27,13 +33,26 @@ export default class Parser {
 
       case FrameTypes.HEADERS:
         return new HeadersFrame(pref);
+
+      case FrameTypes.RST_STREAM:
+        return new RST_StreamFrame(pref);
+
+      case FrameTypes.PING:
+        return new PingFrame(pref);
+
+      case FrameTypes.GOAWAY:
+        return new GoawayFrame(pref);
+
+      case FrameTypes.CONTINUATION:
+        return new ContinuationFrame(pref);
+
+      case FrameTypes.WINDOW_UPDATE:
+        return new WindowUpdateFrame(pref);
+
+      case FrameTypes.PUSH_PROMISE:
+        return new Push_PromiseFrame(pref);
     }
     console.log({...pref, type: type, length: length});
-    if(type == 0x1){
-      console.log("start");
-      console.log(this.table.decompress(payload));
-      console.log("end");
-    }
   }
 
   encode(frame) {
