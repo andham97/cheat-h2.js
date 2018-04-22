@@ -3,7 +3,7 @@ import ConnectionError from '../error';
 import Frame from './frame';
 
 export default class DataFrame extends Frame {
-  data;
+  padding;
 
   constructor(opts){
     super(FrameTypes.DATA, opts);
@@ -14,8 +14,6 @@ export default class DataFrame extends Frame {
       if(Buffer.compare(padding, new Buffer(padding.length)))
         throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-zero padding bytes');
     }
-    else
-      this.data = Buffer.concat([new Buffer(0), this.payload]);
   }
 
   get_payload(){

@@ -4,13 +4,14 @@ import Session from './session';
 export default class SessionManager extends EventEmitter {
   sessions = {};
   next_id = 0;
-  server;
+  paths = {
+    get: {},
+    post: {}
+  };
 
-  constructor(server){
+  constructor(){
     super();
-    this.server = server;
     this.on('session_close', this.session_close);
-    //this.add_session({on: ()=>{}, write: ()=>{}});
   }
 
   add_session(socket){
@@ -18,7 +19,23 @@ export default class SessionManager extends EventEmitter {
     this.next_id++;
   }
 
+  get_handlers(method, path){
+    return this.paths[method.toLowerCase()][path];
+  }
+
   session_close(session){
     delete this.sessions[session.id];
+  }
+
+  register_get(path, handler){
+    if(!this.paths.get[path])
+      this.paths.get[path] = [];
+    this.paths.get[path].push(handler);
+  }
+
+  register_post(path, handler){
+    if(!this.paths.post[path])
+      this.paths.post[path] = [];
+    this.paths.post[path].push(handler);
   }
 }

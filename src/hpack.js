@@ -722,6 +722,8 @@ export default class Context {
   }
 }
 
+export {Entry};
+
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
