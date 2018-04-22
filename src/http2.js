@@ -5,18 +5,27 @@ export default class http2 {
   key;
   cert;
   server;
-  sessionManager;
+  session_manager;
+
 
   constructor(opts){
     if(!opts)
       return;
     this.key = opts.key;
     this.cert = opts.cert;
-    this.sessionManager = new SessionManager();
+    this.session_manager = new SessionManager(this);
     opts.ALPNProtocols = ['h2'];
     this.server = tls.createServer(opts, (socket) => {
-      this.sessionManager.addSession(socket);
+      this.session_manager.add_session(socket);
     });
+  }
+
+  get(path, handler){
+
+  }
+
+  post(path, handler){
+
   }
 
   listen(port) {

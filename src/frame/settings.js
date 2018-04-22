@@ -14,11 +14,11 @@ export default class SettingsFrame extends Frame {
     }
   }
 
-  setSetting(setting, value){
+  set_setting(setting, value){
     this.settings[SettingsEntries.keys[setting]] = value;
   }
 
-  getPayload(){
+  get_payload(){
     this.payload = new Buffer(0);
     if(!this.flags.ACK){
       Object.entries(this.settings).forEach(f => {
@@ -28,6 +28,6 @@ export default class SettingsFrame extends Frame {
         this.payload = Buffer.concat([this.payload, tempBuff]);
       });
     }
-    return super.getPayload();
+    return super.get_payload();
   }
 }

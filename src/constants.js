@@ -123,6 +123,15 @@ export const SettingsEntries = {
 }
 
 export const StreamState = {
+  keys: {
+    0x1: 'STREAM_IDLE',
+    0x2: 'STREAM_RESERVED_LOCAL',
+    0x3: 'STREAM_RESERVED_REMOTE',
+    0x4: 'STREAM_OPEN',
+    0x5: 'STREAM_HALF_CLOSED_REMOTE',
+    0x6: 'STREAM_HALF_CLOSED_LOCAL',
+    0x7: 'STREAM_CLOSED'
+  },
   STREAM_IDLE: 0x1,
   STREAM_RESERVED_LOCAL: 0x2,
   STREAM_RESERVED_REMOTE: 0x3,

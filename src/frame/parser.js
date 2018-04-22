@@ -34,9 +34,11 @@ export default class Parser {
       case FrameTypes.SETTINGS:
         return new SettingsFrame(pref);
     }
-    //console.log({...pref, type: type, length: length, session: null});
+    console.log({...pref, type: type, length: length, session: null});
     if(type == 0x1){
-      console.log(this.table.decode(payload).toString());
+      console.log("start");
+      console.log(this.table.decompress(payload));
+      console.log("end");
     }
   }
 
@@ -52,7 +54,7 @@ export default class Parser {
         return;
       flag |= FrameFlags[frame.type][f[0]];
     });
-    let payload = frame.getPayload();
+    let payload = frame.get_payload();
     header.writeUIntBE(payload.length, 0, 3);
     header.writeUIntBE(frame.type, 3, 1);
     header.writeUIntBE(flag, 4, 1);

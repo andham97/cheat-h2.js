@@ -28,19 +28,19 @@ export default class Frame {
       this.payload = new Buffer(0);
   }
 
-  setData(data){
+  set_data(data){
     this.payload = Buffer.concat([new Buffer(0), data]);
   }
 
-  appendData(data){
+  append_data(data){
     this.payload = Buffer.concat([this.payload, data]);
   }
 
-  setStreamID(id){
+  set_stream_id(id){
     this.sid = id;
   }
 
-  getPayload(){
+  get_payload(){
     return this.payload;
   }
 }

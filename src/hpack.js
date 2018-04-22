@@ -660,6 +660,7 @@ export default class Context {
     let headers = [];
     buffer.cur_byte = 0;
     while(buffer.cur_byte < buffer.length){
+      console.log(buffer.cur_byte);
       let fByte = buffer[buffer.cur_byte];
       let type = -1;
       for(let i = 0; i < header_field_type_spec.length; i++){
@@ -711,6 +712,10 @@ export default class Context {
           let new_max_header_table_size = decode_integer(buffer, 5);
           this.header_table.set_max_size(new_max_header_table_size);
           break;
+        default:
+          console.log();
+          console.log(type);
+          console.log(buffer.cur_byte);
       }
     }
     return headers;
@@ -720,5 +725,4 @@ export default class Context {
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
-
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

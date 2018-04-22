@@ -8,7 +8,7 @@ export default class DataFrame extends Frame {
   constructor(opts){
     super(FrameTypes.DATA, opts);
     if(this.flags.PADDED){
-      let paddingLength = this.payload.readUIntBE(0, 1);
+      let paddingLength = this.payload.readUInt8(0);
       this.data = this.payload.slice(1, this.payload.length - paddingLength);
       let padding = this.payload.slice(this.payload.length - paddingLength);
       if(Buffer.compare(padding, new Buffer(padding.length)))
@@ -16,5 +16,9 @@ export default class DataFrame extends Frame {
     }
     else
       this.data = Buffer.concat([new Buffer(0), this.payload]);
+  }
+
+  get_payload(){
+    return super.get_payload();
   }
 }
