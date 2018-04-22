@@ -39,7 +39,7 @@ export default class HeadersFrame extends Frame{
       if(!padding){
         return new Error('this fail')
       }
-      this.payload = Buffer.concat(new Buffer[padding.length], payload, padding)
+    this.payload = Buffer.concat(new Buffer[padding.length], payload, padding)
 
     }
     return super.get_payload();
