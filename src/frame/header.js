@@ -14,7 +14,7 @@ export default class HeadersFrame extends Frame{
     if(this.flags.PADDED){
       let lenghtPadding = this.payload.readUInt8(0);
       if(Buffer.compare(new Buffer(lenghtPadding), this.payload.slice(this.payload.padding - lenghtPadding)) != 0);
-        return; //// TODO:
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-zero padding bytes');
       this.payload = this.payload.slice(1, this.payload.padding - lenghtPadding);
     }
     if (this.flags.PRIORITY) {
