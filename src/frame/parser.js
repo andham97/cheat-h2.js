@@ -8,7 +8,7 @@ import PingFrame from './ping';
 import GoawayFrame from './go_away';
 import ContinuationFrame from './continuation';
 import WindowUpdateFrame from './window_update';
-import Push_PromiseFrame from './push_promise';
+import PushPromiseFrame from './push_promise';
 
 export default class Parser {
   decode(data) {
@@ -50,7 +50,7 @@ export default class Parser {
         return new WindowUpdateFrame(pref);
 
       case FrameTypes.PUSH_PROMISE:
-        return new Push_PromiseFrame(pref);
+        return new PushPromiseFrame(pref);
     }
     console.log({...pref, type: type, length: length});
   }
@@ -58,7 +58,6 @@ export default class Parser {
   encode(frame) {
     let header = new Buffer(9);
     if(frame.sid >= Math.pow(2, 31) || Math.abs(frame.sid) != frame.sid)
-      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid stream id');
     if(frame.payload.length >= Math.pow(2, 24))
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'frame payload exceed max size');
     let flag = 0x0;

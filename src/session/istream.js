@@ -45,6 +45,7 @@ export default class IStream extends EventEmitter {
   }
 
   handle_idle_frame(frame){
+    console.log(frame);
     switch(frame.type){
       case FrameTypes.HEADERS:
         this.emit('transition_state', StreamState.STREAM_OPEN);
@@ -70,6 +71,9 @@ export default class IStream extends EventEmitter {
     switch(frame.type){
       case FrameTypes.HEADERS:
         this.current_header_buffer = Buffer.concat([frame.payload]);
+        if(frame.flags.END_HEADERS)
+          console.log(this.session.in_context.decompress(this.current_header_buffer));
+        break;
       case FrameTypes.CONTINUATION:
         this.current_header_buffer = Buffer.concat([this.current_header_buffer, frame.payload]);
         if(frame.flags.END_HEADERS)

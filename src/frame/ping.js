@@ -4,7 +4,7 @@ import {FrameTypes} from '../constants';
 export default class PingFrame extends Frame {
 
   constructor(options){
-    super(options);
+    super(FrameTypes.PING, options);
     if(this.payload.length != 8){
       return('FRAME_SIZE_ERROR')
     }

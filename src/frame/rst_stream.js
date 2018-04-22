@@ -5,7 +5,7 @@ export default class RST_StreamFrame extends Frame{
   error_code;
 
   constructor(opitions){
-    super(opitions);
+    super(FrameTypes.RST_STREAM, opitions);
     if(this.payload.length != 4){
       return 'FRAME_SIZE_ERROR';
     }

@@ -4,7 +4,7 @@ import {FrameTypes} from '../constants';
 export default class ContinuationFrame extends Frame{
 
   constructor(options){
-    super(options)
+    super(FrameTypes.CONTINUATION, options);
   }
 
   get_payload(){

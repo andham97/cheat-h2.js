@@ -1,10 +1,10 @@
 import Frame from './frame';
 import {FrameTypes} from '../constants';
 
-export defalt class Push_PromiseFrame extends Frame{
+export default class PushPromiseFrame extends Frame{
 
   constructor(options){
-    super(options);
+    super(FrameTypes.PUSH_PROMISE, options);
   }
 
   get_payload(){

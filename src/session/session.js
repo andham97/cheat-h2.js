@@ -7,6 +7,7 @@ import IStream from './istream';
 import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags} from '../constants';
 import ConnectionError from '../error';
 import Context from '../hpack';
+import FlowControl from './flow_control';
 
 const init_buffer = new Buffer('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n', 'binary');
 const init_settings = new SettingsFrame();
@@ -48,9 +49,9 @@ export default class Session extends EventEmitter {
           return;
         data = data.slice(24);
       }
-      this.delegate_frame(data);
       if(!this.is_init)
         return this.emit('error', new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid first frame'));
+      this.delegate_frame(data);
     });
     this.socket.on('error', () => {});
 
@@ -60,11 +61,11 @@ export default class Session extends EventEmitter {
   }
 
   delegate_frame(data){
-    let frame = this.parser.encode(data);
+    let frame = this.parser.decode(data);
     if(!(frame instanceof Frame))
       return;
     if(frame.sid == 0 && frame instanceof WindowUpdateFrame){
-      
+
     }
     else if(frame.sid == 0 && frame instanceof SettingsFrame){
       let ack_settings_frame = new SettingsFrame();
@@ -72,7 +73,7 @@ export default class Session extends EventEmitter {
       ack_settings_frame.flags.ACK = true;
       this.send_frame(ack_settings_frame);
     }
-    if(!this.flow_control.recieve_frame(data))
+    if(!this.flow_control.recieve(data))
       return;
     for(let i = frame.sid-2; i > 0; i-=2){
       if(this.streams[i].state == StreamState.STREAM_IDLE)

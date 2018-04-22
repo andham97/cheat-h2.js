@@ -1,10 +1,10 @@
 import Frame from './frame';
 import {FrameTypes, ErrorCodes} from '../constants';
 
-export default class GoawayFrame{
+export default class GoawayFrame extends Frame{
 
   constructor(options){
-    super(options);
+    super(FrameTypes.GOAWAY, options);
   }
 
   get_payload(){
