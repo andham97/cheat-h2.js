@@ -4,7 +4,7 @@ import SettingsFrame from '../frame/settings';
 import WindowUpdateFrame from '../frame/window_update';
 import Frame from '../frame/frame';
 import IStream from './istream';
-import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags} from '../constants';
+import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags, StreamState} from '../constants';
 import ConnectionError from '../error';
 import Context from '../hpack';
 import FlowControl from './flow_control';
@@ -27,6 +27,7 @@ export default class Session extends EventEmitter {
   in_context;
   out_context;
   flow_control;
+  headers = {};
 
   constructor(sock, id, mgr){
     super();
@@ -50,14 +51,25 @@ export default class Session extends EventEmitter {
         data = data.slice(24);
       }
       if(!this.is_init)
-        return this.emit('error', new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid first frame'));
-      this.delegate_frame(data);
+        return this.error(new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid first frame'));
+      try {
+        this.delegate_frame(data);
+      }
+      catch(error){
+        this.error(error);
+      }
     });
     this.socket.on('error', () => {});
 
     test_frames.forEach(frame => {
       //this.delegate_frame(frame);
     });
+  }
+
+  update_headers(headers){
+    for(let i = 0; i < headers.length; i++){
+      this.headers[headers[i].name] = headers[i].value;
+    }
   }
 
   delegate_frame(data){
@@ -89,13 +101,13 @@ export default class Session extends EventEmitter {
 
   send_frame(frame){
     let data = this.parser.encode(frame);
-    if(!this.flow_control.send(data));
+    if(!this.flow_control.send(data))
       return; // FLOW ERROR
     this.socket.write(data);
   }
 
-  error(err){
-    console.log(err);
+  error(error){
+    console.log(error.error_code);
   }
 }
 

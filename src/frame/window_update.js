@@ -7,7 +7,6 @@ export default class WindowUpdateFrame extends Frame {
   }
 
   get_payload(){
-    console.log(this.payload);
     if(this.payload.length != 4)
       return new Error('length');
     if(this.payload.readUInt32BE(0) > Math.pow(2, 31) - 1)

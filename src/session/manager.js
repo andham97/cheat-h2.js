@@ -20,7 +20,10 @@ export default class SessionManager extends EventEmitter {
   }
 
   get_handlers(method, path){
-    return this.paths[method.toLowerCase()][path];
+    let handlers = this.paths[method.toLowerCase()][path];
+    if(!handlers || handlers.length == 0)
+      return [this.request_404_handler];
+    return handlers;
   }
 
   session_close(session){
@@ -37,5 +40,9 @@ export default class SessionManager extends EventEmitter {
     if(!this.paths.post[path])
       this.paths.post[path] = [];
     this.paths.post[path].push(handler);
+  }
+
+  request_404_handler(request, response){
+    response.status(404).send('error fetching ' + request.headers[':path'] + ' resource not found');
   }
 }

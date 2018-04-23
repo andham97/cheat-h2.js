@@ -20,11 +20,11 @@ export default class http2 {
   }
 
   get(path, handler){
-    this.session_manager
+    this.session_manager.register_get(path, handler);
   }
 
   post(path, handler){
-
+    this.session_manager.register_post(path, handler);
   }
 
   listen(port) {

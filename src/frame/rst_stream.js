@@ -1,7 +1,7 @@
 import Frame from './frame';
 import {FrameTypes} from '../constants';
 
-export default class RST_StreamFrame extends Frame{
+export default class RSTStreamFrame extends Frame{
   error_code;
 
   constructor(opitions){

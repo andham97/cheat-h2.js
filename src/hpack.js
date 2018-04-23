@@ -354,19 +354,19 @@ const header_field_type_spec = [
 ];
 
 const literal_headers = {
-  'content-length': true,
+  /*'content-length': true,
   'content-MD5': true,
   'forwarded': true,
-  'referer': true
+  'referer': true*/
 };
 
 const literal_headers_never_indexed = {
-  'set-cookie': true,
+  /*'set-cookie': true,
   'authorization': true,
   'from': true,
   'proxy-authorization': true,
   'etag': true,
-  'location': true
+  'location': true*/
 };
 
 const read_byte = (buffer) => {
@@ -505,7 +505,7 @@ class Entry {
 
   constructor(name, value){
     this.name = name.toLowerCase();
-    this.value = value;
+    this.value = value.toString();
     this.size = this.name.length + this.value.length + 32;
   }
 }
@@ -549,8 +549,8 @@ class HeaderTable {
   find(name, value){
     let index = 0;
     for(let i = 0; i < static_table.length; i++){
-      if(static_table[i][0] == name){
-        if(static_table[i][1] == value)
+      if(static_table[i].name == name){
+        if(static_table[i].value == value)
           return {
             index: i + 1,
             exact: true
@@ -619,13 +619,14 @@ export default class Context {
             let header_field_literal_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL].prefix);
             header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
             let header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_buffer, header_field_literal_value_buffer]);
+            buffer = Buffer.concat([buffer, header_field_literal_index_buffer, header_field_literal_value_buffer]);
           }
           else {
             let header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
-            header_field_literal_inc_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+            header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
             let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
             buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
+            this.header_table.add(header);
           }
         }
         else {
@@ -649,6 +650,7 @@ export default class Context {
             let header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
             let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
             buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, header_field_literal_inc_value_buffer]);
+            this.header_table.add(header);
           }
         }
       }
@@ -660,11 +662,10 @@ export default class Context {
     let headers = [];
     buffer.cur_byte = 0;
     while(buffer.cur_byte < buffer.length){
-      console.log(buffer.cur_byte);
       let fByte = buffer[buffer.cur_byte];
       let type = -1;
       for(let i = 0; i < header_field_type_spec.length; i++){
-        if((fByte & header_field_type_spec[i].mask) != 0){
+        if(((fByte >> header_field_type_spec[i].prefix) ^ (header_field_type_spec[i].mask >> header_field_type_spec[i].prefix)) == 0){
           type = i;
           break;
         }
@@ -713,9 +714,10 @@ export default class Context {
           this.header_table.set_max_size(new_max_header_table_size);
           break;
         default:
-          console.log();
-          console.log(type);
+          console.log('COMPRESSION ERROR');
           console.log(buffer.cur_byte);
+          console.log(buffer[buffer.cur_byte].toString(16));
+          return [];
       }
     }
     return headers;
@@ -727,4 +729,5 @@ export {Entry};
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
+
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

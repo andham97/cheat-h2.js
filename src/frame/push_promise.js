@@ -1,7 +1,7 @@
 import Frame from './frame';
 import {FrameTypes} from '../constants';
 
-export defalt class PushPromiseFrame extends Frame{
+export default class PushPromiseFrame extends Frame{
   padding;
   promised_id;
 
