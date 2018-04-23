@@ -15,13 +15,13 @@ export default class Parser {
     let length = data.readUIntBE(0, 3);
     let type = data.readUIntBE(3, 1);
     let flags = data.readUIntBE(4, 1);
-    let sid = data.readUIntBE(5, 4);
+    let stream_id = data.readUIntBE(5, 4);
     let payload = data.slice(9, length+9);
     if(payload.length != length)
       throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-matching payload length. Header specified: ' + length + ', actual: ' + payload.length);
     let pref = {
       flags: flags,
-      sid: sid,
+      stream_id: stream_id,
       payload: payload
     };
     switch(type){
@@ -57,7 +57,7 @@ export default class Parser {
 
   encode(frame) {
     let header = new Buffer(9);
-    if(frame.sid >= Math.pow(2, 31) || Math.abs(frame.sid) != frame.sid)
+    if(frame.stream_id >= Math.pow(2, 31) || Math.abs(frame.stream_id) != frame.stream_id)
     if(frame.payload.length >= Math.pow(2, 24))
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'frame payload exceed max size');
     let flag = 0x0;
@@ -70,7 +70,7 @@ export default class Parser {
     header.writeUIntBE(payload.length, 0, 3);
     header.writeUIntBE(frame.type, 3, 1);
     header.writeUIntBE(flag, 4, 1);
-    header.writeUIntBE(frame.sid, 5, 4);
+    header.writeUIntBE(frame.stream_id, 5, 4);
     return Buffer.concat([header, payload]);
   }
 }

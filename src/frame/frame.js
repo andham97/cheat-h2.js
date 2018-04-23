@@ -1,7 +1,7 @@
 import { FrameFlags } from '../constants';
 
 export default class Frame {
-  sid = -1;
+  stream_id = -1;
   type;
   flags = 0x0;
   payload = new Buffer(0);
@@ -17,7 +17,7 @@ export default class Frame {
     if(!opts){
       return;
     }
-    this.sid = typeof opts.sid != 'undefined' ? opts.sid : -1;
+    this.stream_id = typeof opts.stream_id != 'undefined' ? opts.stream_id : -1;
     Object.entries(this.flags).forEach(flag => {
       this.flags[flag[0]] = (opts.flags & FrameFlags[this.type][flag[0]]) != 0;
     });
@@ -36,7 +36,7 @@ export default class Frame {
   }
 
   set_stream_id(id){
-    this.sid = id;
+    this.stream_id = id;
   }
 
   get_payload(){
