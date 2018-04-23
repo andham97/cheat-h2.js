@@ -1,5 +1,6 @@
+import {ConnectionError} from '../error';
 import Frame from './frame';
-import {FrameTypes} from '../constants';
+import {FrameTypes, ErrorCodes} from '../constants';
 
 export default class PushPromiseFrame extends Frame{
   padding;
@@ -18,9 +19,11 @@ export default class PushPromiseFrame extends Frame{
   }
 
   get_payload(){
+    if(this.payload.length < 4)
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'frame size under 4');
     if(this.flags.PADDED){
       if(this.payload.length < 5){
-        return ('FRAME_SIZE_ERROR')
+        throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'frame size under 5');
       }
       this.payload = Buffer.concat([new Buffer([padding.length]), payload, padding])
     }

@@ -1,5 +1,6 @@
+import {ConnectionError} from '../error';
 import Frame from './frame';
-import { FrameTypes } from '../constants';
+import { FrameTypes, ErrorCodes } from '../constants';
 
 export default class WindowUpdateFrame extends Frame {
   constructor(options){
@@ -8,9 +9,9 @@ export default class WindowUpdateFrame extends Frame {
 
   get_payload(){
     if(this.payload.length != 4)
-      return new Error('length');
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-4 octet frame size');
     if(this.payload.readUInt32BE(0) > Math.pow(2, 31) - 1)
-      return new Error('size');
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'size error');
     this.payload[0] ^= 0x80000000;
     return super.get_payload();
   }

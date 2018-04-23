@@ -1,3 +1,4 @@
+import {ConnectionError} from '../error';
 import Frame from './frame';
 import {FrameTypes, ErrorCodes} from '../constants';
 
@@ -9,10 +10,10 @@ export default class GoawayFrame extends Frame{
 
   get_payload(){
     if(this.payload.length != 8)
-      return ('FRAME_SIZE_ERROR');
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-8 octet frame size');
 
     if(!ErrorCodes.keys[this.payload.readUInt32BE(1)])
-      return ('INTERNAL_ERROR');
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'unknown error type');
 
     return super.get_payload();
   }

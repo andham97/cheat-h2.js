@@ -1,5 +1,6 @@
+import ConnectionError, StreamError from '../error';
 import Frame from './frame';
-import {FrameTypes} from '../constants';
+import {FrameTypes, ErrorCodes} from '../constants';
 
 export default class PriorityFrame extends Frame{
   exclusive;
@@ -9,7 +10,7 @@ export default class PriorityFrame extends Frame{
   constructor(options){
     super(FrameTypes.PRIORITY, options);
     if(this.payload.length != 5)
-      return ('FRAME_SIZE_ERROR_ERROR')
+      throw new StreamError(ErrorCodes.FRAME_SIZE_ERROR, 'weight extends 256')
     this.exclusive = (this.payload.readUInt32BE(0)&(0x1 << 31))!= 0;
     this.stream_dependency = (this.payload.readUInt32BE(0)&(0x7fffffff));
     this.weight = (this.payload.readUInt8(4));
@@ -22,10 +23,10 @@ export default class PriorityFrame extends Frame{
       if(exclusive)
         stream_dependency |= 0x80000000;
       if(this.weight > 256) //KAST FEIL
-        return new Error('');
+        throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'weight extends 256');
       this.payload = Buffer.concat(new Buffer([(stream_dependency >> 24), (stream_dependency >> 16), (stream_dependency >> 8), stream_dependency, weight]), payload);
     } else {
-      return ('KAST EN FEIL');
+      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'stream_dependency extends 31 byte');
     }
     return super.get_payload();
   }

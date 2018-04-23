@@ -32,12 +32,12 @@ export default class HeadersFrame extends Frame{
         if(this.exclusive)
           stream_dependency |= 0x80000000;
         if(this.weight > 256)
-          return new Error('');
+          throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'weight extends 256')
         this.payload = Buffer.concat(new Buffer([(stream_dependency >> 24), (stream_dependency >> 16), (stream_dependency >> 8), stream_dependency, weight]), payload);
     }
     if(this.flags.PADDED){
       if(!padding){
-        return new Error('this fail')
+          throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'padding missing')
       }
       this.payload = Buffer.concat(new Buffer([padding.length]), payload, padding);
     }

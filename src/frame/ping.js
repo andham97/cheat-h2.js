@@ -1,12 +1,13 @@
+import {ConnectionError} from '../error';
 import Frame from './frame';
-import {FrameTypes} from '../constants';
+import {FrameTypes, ErrorCodes} from '../constants';
 
 export default class PingFrame extends Frame {
 
   constructor(options){
     super(FrameTypes.PING, options);
     if(this.payload.length != 8){
-      return('FRAME_SIZE_ERROR')
+        throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-8 octet frame size');
     }
   }
 
