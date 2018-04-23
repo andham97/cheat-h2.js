@@ -1,6 +1,7 @@
 import EventEmitter from 'events';
 import Parser from '../frame/parser';
 import SettingsFrame from '../frame/settings';
+import Settings from './settings';
 import WindowUpdateFrame from '../frame/window_update';
 import Frame from '../frame/frame';
 import IStream from './istream';
@@ -10,9 +11,14 @@ import Context from '../hpack';
 import FlowControl from './flow_control';
 
 const init_buffer = new Buffer('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n', 'binary');
-const init_settings = new SettingsFrame();
+const init_settings = (()=>{
+  let settings = new Settings();
+  settings.set_setting(SettingsEntries.SETTINGS_MAX_CONCURRENT_STREAMS, 20);
+  settings.set_setting(SettingsEntries.SETTINGS_MAX_HEADER_LIST_SIZE, 3);
+  return settings.to_frame(0);
+})();
 const init_window_update = new WindowUpdateFrame();
-init_settings.sid = 0;
+console.log(init_settings);
 init_window_update.sid = 0;
 init_window_update.set_data(new Buffer([0x0, 0x0, 0xff, 0xff]));
 
@@ -20,7 +26,7 @@ export default class Session extends EventEmitter {
   socket;
   is_init = false;
   open = true;
-  id;
+  session_id;
   manager;
   streams = {};
   parser;
@@ -28,21 +34,20 @@ export default class Session extends EventEmitter {
   out_context;
   flow_control;
   headers = {};
+  settings = {};
 
   constructor(sock, id, mgr){
     super();
     this.socket = sock;
-    this.id = id;
+    this.session_id = id;
     this.manager = mgr;
     this.parser = new Parser(this);
     this.in_context = new Context();
     this.out_context = new Context();
     this.flow_control = new FlowControl();
 
-    this.on('error', this.error);
-
     this.socket.on('data', (data) => {
-      if(!this.id_init && Buffer.compare(data.slice(0, 24), init_buffer) == 0){
+      if(!this.is_init && Buffer.compare(data.slice(0, 24), init_buffer) == 0){
         this.send_frame(init_settings);
         this.send_frame(init_window_update);
         this.is_init = true;
@@ -52,17 +57,19 @@ export default class Session extends EventEmitter {
       }
       if(!this.is_init)
         return this.error(new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid first frame'));
-      try {
-        this.delegate_frame(data);
+      this.process_frame(data);
+    });
+    this.socket.on('error', (error) => {
+      this.error(error);
+    });
+
+    test_frames.forEach(frame => {
+      try{
+        //this.delegate_frame(frame);
       }
       catch(error){
         this.error(error);
       }
-    });
-    this.socket.on('error', () => {});
-
-    test_frames.forEach(frame => {
-      //this.delegate_frame(frame);
     });
   }
 
@@ -72,10 +79,8 @@ export default class Session extends EventEmitter {
     }
   }
 
-  delegate_frame(data){
+  process_frame(data){
     let frame = this.parser.decode(data);
-    if(!(frame instanceof Frame))
-      return;
     if(frame.sid == 0 && frame instanceof WindowUpdateFrame){
 
     }
@@ -87,8 +92,20 @@ export default class Session extends EventEmitter {
     }
     if(!this.flow_control.recieve(data))
       return;
+    try {
+      this.delegate_frame(frame);
+    }
+    catch(error){
+      this.error(error);
+    }
+  }
+
+  delegate_frame(frame){
+    if(!(frame instanceof Frame))
+      return;
+
     for(let i = frame.sid-2; i > 0; i-=2){
-      if(this.streams[i].state == StreamState.STREAM_IDLE)
+      if(this.streams[i].stream_state == StreamState.STREAM_IDLE)
         this.streams[i].emit('transition_state', StreamState.STREAM_CLOSED);
     }
     let stream = this.streams[frame.sid];
@@ -107,7 +124,9 @@ export default class Session extends EventEmitter {
   }
 
   error(error){
-    console.log(error.error_code);
+    if(error.error_code == undefined)
+      throw error;
+    console.log(ErrorCodes.keys[error.error_code]);
   }
 }
 

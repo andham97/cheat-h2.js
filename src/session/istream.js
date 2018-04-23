@@ -1,31 +1,29 @@
-import EventEmitter from 'events';
-import { StreamState, FrameTypes } from '../constants';
+import Stream from './stream';
+import { StreamState, FrameTypes, ErrorCodes } from '../constants';
 import { Entry } from '../hpack';
 import Request from './request';
 import Response from './response';
 import HeadersFrame from '../frame/header';
 import DataFrame from '../frame/data';
 import RSTStreamFrame from '../frame/rst_stream';
+import {ConnectionError, StreamError} from '../error';
 
-export default class IStream extends EventEmitter {
-  id;
-  state = StreamState.STREAM_IDLE;
-  session;
+export default class IStream extends Stream {
   current_data_buffer = new Buffer(0);
   current_header_buffer = new Buffer(0);
   flag_backlog = [];
 
-  constructor(id, sess){
-    super();
-    this.session = sess;
-    this.id = id;
+  constructor(id, session){
+    super(id, session);
     this.on('recieve_frame', this.recieve_frame);
     this.on('transition_state', this.transition_state);
+    console.log();
+    console.log('Created Stream ID: ' + this.stream_id);
   }
 
   recieve_frame(frame){
     console.log();
-    console.log('Stream ID: ' + this.id);
+    console.log('Stream ID: ' + this.stream_id);
     console.log('Frame type: ' + FrameTypes.keys[frame.type]);
     console.log(frame);
     this.delegate_frame(frame);
@@ -45,7 +43,7 @@ export default class IStream extends EventEmitter {
       case FrameTypes.PRIORITY:
         break;
       default:
-        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved');
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
     }
   }
 
@@ -55,6 +53,11 @@ export default class IStream extends EventEmitter {
         this.emit('transition_state', StreamState.STREAM_CLOSED);
         this.delegate_frame(frame);
         break;
+      case FrameTypes.PRIORITY:
+      case FrameTypes.WINDOW_UPDATE:
+        break;
+      default:
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
     }
   }
 
@@ -81,53 +84,91 @@ export default class IStream extends EventEmitter {
           this.handle_request();
         }
         break;
+      case FrameTypes.RST_STREAM:
+        this.emit('transition_state', StreamState.RST_STREAM);
+        break;
     }
   }
 
   handle_reserved_remote_frame(frame){
-
+    switch(frame.type){
+      case FrameTypes.HEADERS:
+        this.current_header_buffer = Buffer.concat([frame.payload]);
+        this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_LOCAL);
+        this.delegate_frame(frame);
+        break;
+      case FrameTypes.RST_STREAM:
+        this.emit('transition_state', StreamState.STREAM_CLOSED);
+        break;
+      case FrameTypes.PRIORITY:
+        break;
+      default:
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+    }
   }
 
   handle_half_closed_remote_frame(frame){
-
+    switch(frame.type){
+      case FrameTypes.WINDOW_UPDATE:
+      case FrameTypes.PRIORITY:
+        break;
+      case FrameTypes.RST_STREAM:
+        this.emit('transition_state', StreamState.STREAM_CLOSED);
+        break;
+      default:
+        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+    }
   }
 
   handle_closed_frame(frame){
-
+    switch(frame.type){
+      case FrameTypes.PRIORITY:
+      case FrameTypes.WINDOW_UPDATE:
+      case FrameTypes.RST_STREAM:
+        break;
+      default:
+        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+    }
   }
 
   handle_half_closed_local_frame(frame){
-
+    if(frame.flags.END_STREAM)
+      this.emit('transition_state', StreamState.STREAM_CLOSED);
+    switch(frame.type){
+      case StreamState.RST_STREAM:
+        this.emit('transition_state', StreamState.STREAM_CLOSED);
+        break;
+    }
   }
 
   transition_state(new_state){
     console.log(StreamState.keys[new_state]);
-    switch(this.state){
+    switch(this.stream_state){
       case StreamState.STREAM_IDLE:
         if([StreamState.STREAM_OPEN, StreamState.STREAM_RESERVED_LOCAL, StreamState.STREAM_RESERVED_REMOTE].indexOf(new_state) != -1)
-          this.state = new_state;
+          this.stream_state = new_state;
         break;
       case StreamState.STREAM_RESERVED_LOCAL:
         if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_REMOTE].indexOf(new_state) != -1)
-          this.state = new_state;
+          this.stream_state = new_state;
         break;
       case StreamState.STREAM_OPEN:
         if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_REMOTE, StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
-          this.state = new_state;
+          this.stream_state = new_state;
         break;
       case StreamState.STREAM_OPEN:
         if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_REMOTE, StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
-          this.state = new_state;
+          this.stream_state = new_state;
         break;
       case StreamState.STREAM_HALF_CLOSED_REMOTE:
         if(StreamState.STREAM_CLOSED == new_state)
-          this.state = new_state;
+          this.stream_state = new_state;
         break;
     }
   }
 
   delegate_frame(frame){
-    switch(this.state){
+    switch(this.stream_state){
       case StreamState.STREAM_IDLE:
         this.handle_idle_frame(frame);
         break;
@@ -192,9 +233,9 @@ export default class IStream extends EventEmitter {
   convert_response(response){
     let hf = new HeadersFrame();
     let df = new DataFrame();
-    hf.sid = this.id;
+    hf.sid = this.stream_id;
     hf.flags.END_HEADERS = true;
-    df.sid = this.id;
+    df.sid = this.stream_id;
     df.flags.END_STREAM = true;
     response.headers['content-length'] = response.payload.length;
     let headers = Object.entries(response.headers).map(e => {
@@ -213,7 +254,7 @@ export default class IStream extends EventEmitter {
   }
 
   send_frame(frame){
-    switch(this.state){
+    switch(this.stream_state){
       case StreamState.STREAM_HALF_CLOSED_REMOTE:
         if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_CLOSED);

@@ -27,7 +27,7 @@ export default class SessionManager extends EventEmitter {
   }
 
   session_close(session){
-    delete this.sessions[session.id];
+    delete this.sessions[session.session_id];
   }
 
   register_get(path, handler){

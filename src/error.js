@@ -2,7 +2,7 @@ import { ErrorCodes } from './constants';
 
 export class ConnectionError extends Error {
   error_code;
-  
+
   constructor(error, msg){
     super(ErrorCodes.keys[error] + (typeof msg != 'undefined' ? ': ' + msg : ''));
     Error.captureStackTrace(this, ConnectionError);
