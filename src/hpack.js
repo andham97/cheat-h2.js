@@ -597,6 +597,10 @@ export default class Context {
     this.header_table = new HeaderTable();
   }
 
+  set_max_table_size(size){
+    //this.header_table.set_max_size(size);
+  }
+
   compress(headers){
     let buffer = new Buffer(0);
     for(let i = 0; i < headers.length; i++){

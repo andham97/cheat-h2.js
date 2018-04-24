@@ -3,7 +3,7 @@ import {StreamState} from '../constants';
 
 export default class Stream extends EventEmitter {
   stream_id;
-  stream_state = StreamState.IDLE;
+  stream_state = StreamState.STREAM_IDLE;
   session;
 
   constructor(id, session){

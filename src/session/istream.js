@@ -65,17 +65,17 @@ export default class IStream extends Stream {
     switch(frame.type){
       case FrameTypes.HEADERS:
         this.current_header_buffer = Buffer.concat([frame.payload]);
-        if(frame.flags.END_STREAM){
+        if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
+        if(frame.flags.END_HEADERS)
           this.handle_request();
-        }
         break;
       case FrameTypes.CONTINUATION:
         this.current_header_buffer = Buffer.concat([this.current_header_buffer, frame.payload]);
-        if(frame.flags.END_STREAM){
+        if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
+        if(frame.falgs.END_HEADERS)
           this.handle_request();
-        }
         break;
       case FrameTypes.DATA:
         this.current_data_buffer = Buffer.concat([this.current_data_buffer, frame.payload]);
@@ -190,6 +190,8 @@ export default class IStream extends Stream {
       case StreamState.STREAM_HALF_CLOSED_LOCAL:
         this.handle_half_closed_local_frame(frame);
         break;
+      default:
+        console.log('Not handling state: ' + this.stream_state);
     }
   }
 
@@ -205,6 +207,7 @@ export default class IStream extends Stream {
     if(next_handler)
       next_handler();
     let frames = this.convert_response(response);
+    console.log('Sending response');
     frames.forEach(frame => {
       this.send_frame(frame);
     });
@@ -233,9 +236,9 @@ export default class IStream extends Stream {
   convert_response(response){
     let hf = new HeadersFrame();
     let df = new DataFrame();
-    hf.sid = this.stream_id;
+    hf.stream_id = this.stream_id;
     hf.flags.END_HEADERS = true;
-    df.sid = this.stream_id;
+    df.stream_id = this.stream_id;
     df.flags.END_STREAM = true;
     response.headers['content-length'] = response.payload.length;
     let headers = Object.entries(response.headers).map(e => {
@@ -254,12 +257,14 @@ export default class IStream extends Stream {
   }
 
   send_frame(frame){
+    console.log(frame);
     switch(this.stream_state){
       case StreamState.STREAM_HALF_CLOSED_REMOTE:
         if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_CLOSED);
         else if(frame instanceof RSTStreamFrame)
           this.emit('transition_state', StreamState.STREAM_CLOSED);
+        break;
     }
     this.session.send_frame(frame);
   }

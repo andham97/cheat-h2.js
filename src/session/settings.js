@@ -30,7 +30,7 @@ export default class Settings {
     if(!(frame instanceof SettingsFrame))
       return;
     Object.entries(frame.settings).forEach(setting => {
-      
+
     });
   }
 
@@ -38,7 +38,7 @@ export default class Settings {
     if(stream_id == undefined || typeof stream_id !== 'number')
       return null;
     let settings_frame = new SettingsFrame();
-    settings_frame.sid = stream_id;
+    settings_frame.stream_id = stream_id;
     Object.entries(this.settings).forEach(setting => {
       if(init_values[setting[0]] != undefined && init_values[setting[0]] != setting[1])
         settings_frame.settings[setting[0]] = setting[1];

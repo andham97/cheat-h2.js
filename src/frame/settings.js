@@ -27,7 +27,7 @@ export default class SettingsFrame extends Frame {
         this.payload = new Buffer(6 * entries.length);
         entries.forEach((setting, i) => {
           this.payload.writeUIntBE(SettingsEntries[setting[0]], i * 6, 2);
-          this.payload.writeUIntBE(setting[1], (i * 6) + 2, 4);
+          this.payload.writeUIntBE((typeof setting[1] == 'boolean' ? (setting[1] ? 1 : 0) : setting[1]), (i * 6) + 2, 4);
         });
       }
     }
