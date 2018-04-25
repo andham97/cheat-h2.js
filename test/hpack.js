@@ -1,6 +1,7 @@
 import chai from 'chai';
 import {ConnectionError} from '../src/error';
-import {hpack_methods} from '../src/hpack';
+import {hpack_methods, Entry} from '../src/hpack';
+import h2 from '../'
 
 describe('encoding header request, integer encoding', () => {
   it('should encode a http header, low test number ', () => {
@@ -103,7 +104,39 @@ describe('decoding header request, huffman decoding', () =>{
 
 
 describe('compress function', () => {
-  it('should compress headerfield given entry', () => {
+  it('should return as invalid, INTERNAL_ERROR, on empty entry', () => {
     chai.expect(() => new hpack_methods.Context().compress()).to.throw('invalid');
+  });
+
+  it('should compress headerfield given entry, empty array entry', () => {
+    chai.expect(new hpack_methods.Context().compress([])).to.deep.equal(new Buffer([]));
+  });
+
+  it('should return as invalid, header != Entry', () =>{
+    let entry = [':path', 'method:', '1010', 'hello'];
+    chai.expect(() => new hpack_methods.Context().compress(entry)).to.throw('INTERNAL_ERROR: invalied arrgument');
+  });
+
+  it('should compress entry, array with just one entry', () => {
+    let entry = [new Entry(':method', 'GET')];
+    chai.expect(new hpack_methods.Context().compress(entry)).to.deep.equal(new Buffer([0x82]));
+  });
+
+  it('should compress entry, array with several enties', () => {
+    let entries = [new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')];
+    chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96]))
+  });
+});
+
+
+describe('decompress function', () => {
+  it('should decompress entry, array with one entry', () => {
+    let buffer = new Buffer([0x82]);
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'GET')]);
+  });
+
+  it('should decomrpess entries, array with several entries', () => {
+    let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96]);
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')]);
   });
 });
