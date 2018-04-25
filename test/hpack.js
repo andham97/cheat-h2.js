@@ -11,7 +11,7 @@ describe('creating new entry', () => {
   });
 });
 
-describe('add entry to header table', () => {
+describe('testing methods attached to header table', () => {
   it('should return invalid arrgument', () => {
     let entry = [':method', 'GET'];
     chai.expect(() => new hpack_methods.HeaderTable().add(entry)).to.throw('invalid');
@@ -19,8 +19,18 @@ describe('add entry to header table', () => {
 
   it('should add new entry to header table', () => {
     let entry = new Entry(':method', 'GET');
-    chai.expect(new hpack_methods.HeaderTable().add(entry)).to.deep.equal()
-  })
+    chai.expect(new hpack_methods.HeaderTable().add(entry)).to.deep.equal();
+  });
+
+  it('should return invalid arrgument, getting index', () => {
+    let index = '1';
+    chai.expect(() => new hpack_methods.HeaderTable().get(index)).to.throw('invalid');
+  });
+
+  it('should return invalid arrgument, index smaller than 1', () => {
+    let index = 0;
+    chai.expect(() => new hpack_methods.HeaderTable().get(index)).to.throw('invalid');
+  });
 });
 
 describe('encoding header request, integer encoding', () => {

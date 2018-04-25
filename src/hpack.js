@@ -568,7 +568,7 @@ class HeaderTable {
     if(typeof index != 'number')
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(index < 1 || index > static_table.length + this.entries.length)
-      return new Error('OMG');
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(index < static_table.length)
       return static_table[index - 1];
     else
