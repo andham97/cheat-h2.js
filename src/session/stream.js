@@ -5,6 +5,9 @@ export default class Stream extends EventEmitter {
   stream_id;
   stream_state = StreamState.STREAM_IDLE;
   session;
+  stream_dependency;
+  weight;
+  exclusive;
 
   constructor(id, session){
     super();
