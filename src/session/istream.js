@@ -147,7 +147,7 @@ export default class IStream extends Stream {
           this.stream_state = new_state;
         break;
       case StreamState.STREAM_RESERVED_REMOTE:
-        if([StreamState.STREAM_CLOSED StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
+        if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
           this.stream_state = new_state;
         break;
       case StreamState.STREAM_OPEN:
@@ -166,8 +166,6 @@ export default class IStream extends Stream {
   }
 
   delegate_frame(frame){
-    console.log(frame.type);
-    console.log(this.stream_state);
     switch(frame.type){
       case FrameTypes.PRIORITY:
         this.stream_dependency = frame.stream_dependency;
@@ -204,7 +202,6 @@ export default class IStream extends Stream {
 
   handle_request(){
     let headers = this.session.in_context.decompress(this.current_header_buffer);
-    console.log(this.current_header_buffer);
     console.log(headers);
     this.session.update_headers(headers);
     let request = new Request(this.session.headers, this.current_data_buffer);

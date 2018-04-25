@@ -30,7 +30,6 @@ export default class ControlStream extends IStream {
         break;
       case FrameTypes.GOAWAY:
         console.log(frame.debug_data.toString());
-        console.log(this.session.socket);
         this.session.socket.destroy();
         break;
       case FrameTypes.PING:

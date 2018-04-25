@@ -20,9 +20,6 @@ export default class Parser {
     let flags = data.readUInt8(4);
     let stream_id = data.readUInt32BE(5) & 0x7fffffff;
     let payload = data.slice(9);
-    console.log(data);
-    console.log(payload);
-    console.log(type);
     if(payload.length != length)
       throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-matching payload length. Header specified: ' + length + ', actual: ' + payload.length);
     let pref = {
@@ -61,6 +58,8 @@ export default class Parser {
       case FrameTypes.PUSH_PROMISE:
         return new PushPromiseFrame(pref);
     }
+    console.log();
+    console.log('INVALID FRAME TYPE');
     console.log({...pref, type: type, length: length});
   }
 

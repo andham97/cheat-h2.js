@@ -30,7 +30,6 @@ export default class SessionManager extends EventEmitter {
 
   session_close(session){
     delete this.sessions[session.session_id];
-    console.log(this.sessions.toString());
   }
 
   register_get(path, handler){
