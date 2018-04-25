@@ -130,6 +130,10 @@ describe('compress function', () => {
 
 
 describe('decompress function', () => {
+  it('should return with invalid argument', () => {
+    let buffer = (0x82);
+    chai.expect(() => new hpack_methods.Context().decompress()).to.throw('invalid');
+  })
   it('should decompress entry, array with one entry', () => {
     let buffer = new Buffer([0x82]);
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'GET')]);
