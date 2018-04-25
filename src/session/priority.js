@@ -1,4 +1,5 @@
 import Stream from './stream';
+import {StreamState} from '../constants';
 
 const default_weight = 16;
 
@@ -26,16 +27,25 @@ export default class Priority{
     this.priority_queue.push(stream);
   }
 
-  get_stream(){
-    if(this.priority_queue.length < 1)
-      return null;
-    let current_stream = this.priority_queue[1];
-    this.priority_queue.splice(1, 1);
-    for(let i = 1; i < this.priority_queue.length; i++){
-      if(this.priority_queue[i].stream_dependency == current_stream.stream_id)
+  get_next_streams(){
+    if(this.priority_queue.length == 0)
+      return [];
+    let current_stream = [];
+    let closed_streams = [];
+    let i = 0;
+    while(i < this.priority_queue.length && this.priority_queue[i].stream_dependency == 0){
+      if(this.priority_queue[i].stream_state == StreamState.STREAM_CLOSED){
+        closed_streams.push(this.priority_queue[i].stream_id);
+        this.priority_queue.splice(i, 1);
+      }
+      else {
+        current_stream.push(this.priority_queue[i]);
+        i++;
+      }
+    }
+    for(; i < this.priority_queue.length; i++){
+      if(closed_streams.indexOf(this.priority_queue[i].stream_dependency) != -1)
         this.priority_queue[i].stream_dependency = 0;
-      else
-        break;
     }
     return current_stream;
   }

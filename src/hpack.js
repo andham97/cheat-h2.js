@@ -402,6 +402,8 @@ const huffman_generate_tree = () => {
 }
 
 const huffman_decode = (buffer) => {
+  if(!(buffer instanceof Buffer))
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   let node = huffman_root;
   let ret = [];
   for(let i = 0; i <buffer.length; i++){
@@ -421,6 +423,10 @@ const huffman_decode = (buffer) => {
 }
 
 const decode_integer = (buffer, prefix) => {
+  if(!(buffer instanceof Buffer))
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
+  if(prefix > 8 || prefix < 1)
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid prefix size');
   let limit = Math.pow(2, prefix) - 1;
   let i = read_byte(buffer) & limit;
   if(i < limit)
@@ -428,25 +434,31 @@ const decode_integer = (buffer, prefix) => {
   let b, m = 0;
   do {
     b = read_byte(buffer);
-    i += (b & 127) * Math.pow(2, m);
+    if(b == undefined)
+      throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'invalid integer representation');
+    i += (b & 0x7f) * Math.pow(2, m);
     m += 7;
-  } while((b & 128) == 128);
+  } while((b & 0x80) != 0);
   return i;
 }
 
 const decode_string = (buffer) => {
+  if(!(buffer instanceof Buffer))
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   let sByte = buffer[buffer.current_byte];
-
+  let length = decode_integer(buffer, 7);
+  if(buffer.length < buffer.current_byte + length)
+    throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'invalid string representation');
   if((sByte & 0x80) != 0)
-    return huffman_decode(read_bytes(buffer, decode_integer(buffer, 7))).toString();
-  else{
-    let int = decode_integer(buffer, 7);
-    return read_bytes(buffer, int).toString();
-  }
+    return huffman_decode(read_bytes(buffer, length)).toString();
+  else
+    return read_bytes(buffer, length).toString();
 }
 
 
 const huffman_encode = (buffer) => {
+  if(!(buffer instanceof Buffer))
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   let result = [];
   let bitIndex = 7;
   let curByte = 0;
@@ -476,13 +488,15 @@ const huffman_encode = (buffer) => {
 }
 
 const encode_integer = (num, prefix) => {
+  if(prefix > 8 || prefix < 1)
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid prefix size');
   let limit = Math.pow(2, prefix) - 1;
   if(num < limit)
     return new Buffer([num]);
   let octs = [limit];
   num -= limit;
-  while(num >= 128){
-    octs.push((num % 128) | 0x80);
+  while(num >= 0x80){
+    octs.push((num % 0x80) | 0x80);
     num >>= 7;
   }
   octs.push(num);
@@ -490,6 +504,8 @@ const encode_integer = (num, prefix) => {
 }
 
 const encode_string = (sBuffer, huffman) => {
+  if(!(sBuffer instanceof Buffer))
+    throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   if(huffman){
     let hBuffer = huffman_encode(sBuffer);
     let len = encode_integer(hBuffer.length, 7);
@@ -511,6 +527,8 @@ class Entry {
   size;
 
   constructor(name, value){
+    if(!(typeof name == 'string'))
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     this.name = name.toLowerCase();
     this.value = value.toString();
     this.size = this.name.length + this.value.length + 32;
@@ -531,6 +549,8 @@ class HeaderTable {
   }
 
   add(entry){
+    if(!(entry instanceof Entry))
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(entry.size > this.max_size){
       this.size = 0;
       this.entries = [];
@@ -545,6 +565,8 @@ class HeaderTable {
   }
 
   get(index){
+    if(typeof index != 'number')
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(index < 1 || index > static_table.length + this.entries.length)
       return new Error('OMG');
     if(index < static_table.length)
@@ -584,6 +606,8 @@ class HeaderTable {
   }
 
   set_max_size(new_size){
+    if(typeof new_size != 'number')
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     new_size = Math.min(new_size, 4096);
     if(this.max_size == new_size)
       return;
@@ -600,12 +624,14 @@ export default class Context {
   header_table;
 
   constructor(options){
-    this.huffman = (options && options.huffman ? true : false);
+    if(!options)
+      options = {};
+    this.huffman = options.huffman || false;
     this.header_table = new HeaderTable();
   }
 
   set_max_table_size(size){
-    //this.header_table.set_max_size(size);
+    this.header_table.set_max_size(size);
   }
 
   compress(headers){
@@ -674,6 +700,8 @@ export default class Context {
   }
 
   decompress(buffer){
+    if(!(buffer instanceof Buffer))
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     let headers = [];
     buffer.current_byte = 0;
     while(buffer.current_byte < buffer.length){
