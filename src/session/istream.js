@@ -168,6 +168,13 @@ export default class IStream extends Stream {
   delegate_frame(frame){
     console.log(frame.type);
     console.log(this.stream_state);
+    switch(frame.type){
+      case FrameTypes.PRIORITY:
+        this.stream_dependency = frame.stream_dependency;
+        this.weight = frame.weight;
+        this.exclusive = frame.exclusive;
+        return this.session.priority.update_stream(this);
+    }
     switch(this.stream_state){
       case StreamState.STREAM_IDLE:
         this.handle_idle_frame(frame);

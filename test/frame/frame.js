@@ -1,4 +1,4 @@
-import Frame from '../../src/frame/frame';
+import Frame from './frame';
 import chai from 'chai';
 
 describe('Frame', () => {

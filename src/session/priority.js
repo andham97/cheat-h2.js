@@ -6,6 +6,8 @@ export default class Priority{
   priority_queue = [];
 
   add_stream(stream){
+    if(stream.weight == -1)
+      stream.weight = default_weight;
     let dependency_found = false;
     for(let i = 0; i < this.priority_queue.length; i++){
       if(!dependency_found && this.priority_queue[i].stream_id == stream.stream_dependency)

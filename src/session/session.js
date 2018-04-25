@@ -13,6 +13,7 @@ import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags, StreamState} from '
 import {ConnectionError, StreamError} from '../error';
 import Context from '../hpack';
 import FlowControl from './flow_control';
+import Priority from './priority';
 
 const init_buffer = new Buffer('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n', 'binary');
 const init_settings = (()=>{
@@ -31,6 +32,9 @@ export default class Session extends EventEmitter {
   session_id;
   manager;
   streams = {};
+  active_in_streams = 0;
+  active_out_streams = 0;
+  priority;
   parser;
   in_context;
   in_settings;
@@ -38,7 +42,7 @@ export default class Session extends EventEmitter {
   out_settings;
   flow_control;
   headers = {};
-  log;
+
 
   constructor(sock, id, mgr){
     super();
@@ -52,6 +56,7 @@ export default class Session extends EventEmitter {
     this.in_context = new Context();
     this.out_context = new Context();
     this.flow_control = new FlowControl();
+    this.priority = new Priority();
 
     this.socket.on('data', (data) => {
       if(!this.is_init && Buffer.compare(data.slice(0, 24), init_buffer) == 0){
@@ -112,7 +117,8 @@ export default class Session extends EventEmitter {
   }
 
   send_frame(frame){
-    console.log('\nSENDING');
+    console.log();
+    console.log('SENDING');
     console.log(frame);
     if(frame.debug_data)
       console.log(frame.debug_data.toString());

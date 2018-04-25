@@ -1,4 +1,3 @@
-import Frame from '../../src/frame/frame';
 import chai from 'chai';
 import {hpack_methods} from '../src/hpack';
 
