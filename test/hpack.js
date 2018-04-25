@@ -4,6 +4,12 @@ import {hpack_methods, Entry} from '../src/hpack';
 import h2 from '../'
 
 describe('encoding header request, integer encoding', () => {
+  it('should return invalid arrgument, prefix bigger than 8', () => {
+    let num = 10;
+    let prefix = 9;
+    chai.expect(() => hpack_methods.encode_integer(num, prefix)).to.throw('invalid');
+  });
+
   it('should encode a http header, low test number ', () => {
     let num = 10;
     let prefix = 5;
@@ -19,6 +25,11 @@ describe('encoding header request, integer encoding', () => {
 
 
 describe('encoding header request, string encoding', () => {
+  it('should return invalid arrgument, wrong arrgument', () => {
+    let sBuffer = (0x00);
+    let huffman = true;
+    chai.expect(() => hpack_methods.encode_string(sBuffer, huffman)).to.throw('invalid');
+  })
   it('should encode a http header, shot string with huffman', () => {
     let sBuffer = new Buffer([0x4f]);
     let huffman = true;
@@ -46,6 +57,19 @@ describe('encoding header request, string encoding', () => {
 
 
 describe('decoding header request, integer decoding', () => {
+  it('should return invalid arrgument, wrong arrgument', () => {
+    let buffer = (0x00);
+    let prefix = 5;
+    chai.expect(() => hpack_methods.decode_integer(buffer, prefix)).to.throw('invalid');
+  });
+
+  it('should return invalid arrgument, prefix is higher then 8', () => {
+    let buffer = new Buffer([0x0a]);
+    buffer.current_byte = 0;
+    let prefix = 9;
+    chai.expect(() => hpack_methods.decode_integer(buffer,prefix)).to.throw('invalid');
+  })
+
   it('should decode a http header, low test number', () => {
     let buffer = new Buffer([0x0a]);
     buffer.current_byte = 0;
@@ -63,6 +87,17 @@ describe('decoding header request, integer decoding', () => {
 
 
 describe('decoding header request, string decoding', () => {
+  it('should return invalid arrgument, wrong arrgument', () => {
+    let buffer = (0x00);
+    chai.expect(() => hpack_methods.decode_string(buffer)).to.throw('invalid');
+  });
+
+  it('should return invalid arrgument, invalid string representation', () => {
+    let buffer = new Buffer([0x01]);
+    buffer.current_byte = 10;
+    chai.expect(() => hpack_methods.decode_string(buffer)).to.throw('invalid string representation');
+  });
+
   it('should decode a http header, short test string with huffman', () => {
     let buffer = new Buffer([0x01, 0x4f]);
     buffer.current_byte = 0;
@@ -74,10 +109,14 @@ describe('decoding header request, string decoding', () => {
     buffer.current_byte = 0;
     chai.expect(hpack_methods.decode_string(buffer)).to.equal('Oda og hammer er best!');
   });
-
 });
 
 describe('encoding header request, huffman encoding', () => {
+  it('should return invalid arrgument, wrong arrgument', () => {
+    let buffer = (0x00);
+    chai.expect(() => hpack_methods.huffman_encode(buffer)).to.throw('invalid');
+  });
+
   it('should encode a http header using huffman, short buffer example', () => {
     let buffer = new Buffer([0x4f, 0x64, 0x61]);
     chai.expect(hpack_methods.huffman_encode(buffer)).to.deep.equal(new Buffer([0xd5, 0x20, 0xff]))
@@ -91,6 +130,11 @@ describe('encoding header request, huffman encoding', () => {
 
 
 describe('decoding header request, huffman decoding', () =>{
+  it('should return invalid argument, using wrong arrgument', () =>{
+    let buffer = (0x82);
+    chai.expect(() => hpack_methods.huffman_decode(buffer)).to.throw('invalid');
+  });
+
   it('should decode a http header using huffman, short buffer example', () => {
     let buffer = new Buffer([0xd5, 0x20, 0xff]);
     chai.expect(hpack_methods.huffman_decode(buffer)).to.deep.equal(new Buffer([0x4f, 0x64, 0x61]));
@@ -132,7 +176,7 @@ describe('compress function', () => {
 describe('decompress function', () => {
   it('should return with invalid argument', () => {
     let buffer = (0x82);
-    chai.expect(() => new hpack_methods.Context().decompress()).to.throw('invalid');
+    chai.expect(() => new hpack_methods.Context().decompress(buffer)).to.throw('invalid');
   })
   it('should decompress entry, array with one entry', () => {
     let buffer = new Buffer([0x82]);
