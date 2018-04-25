@@ -47,7 +47,7 @@ describe('testing methods attached to header table', () => {
     let new_size = '400';
     chai.expect(() => new hpack_methods.HeaderTable().set_max_size(new_size)).to.throw('invalid');
   });
-  it('should set new max size, same as max_szi', () => {
+  it('should set new max size, same as max_size', () => {
     let new_size = 4096;
     chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
   });
@@ -220,6 +220,11 @@ describe('compress function', () => {
   it('should compress entry, array with several enties', () => {
     let entries = [new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')];
     chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96]))
+  });
+
+  it('should set new max table size', () => {
+    let size = 400
+    chai.expect(new hpack_methods.Context().set_max_table_size(size)).to.deep.equal();
   });
 });
 
