@@ -31,6 +31,23 @@ describe('testing methods attached to header table', () => {
     let index = 0;
     chai.expect(() => new hpack_methods.HeaderTable().get(index)).to.throw('invalid');
   });
+/*
+  it('should find entry, given name and value', () => {
+    let name = ':method';
+    let value = 'GET';
+    chai.expect(new hpack_methods.HeaderTable().find(name, value)).to.equal();
+  });
+  */
+  it('should set new max size', () => {
+    let new_size = 400;
+    chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
+  });
+
+  it('should return invalid arrgument, new size not number', () => {
+    let new_size = '400';
+    chai.expect(() => new hpack_methods.HeaderTable().set_max_size(new_size)).to.throw('invalid');
+  });
+
 });
 
 describe('encoding header request, integer encoding', () => {

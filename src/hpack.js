@@ -784,12 +784,16 @@ export const hpack_methods = {
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
-
+/**
 let b = new Context()
 let entry = [new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')]
 console.log(b.compress(entry));
 
 let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96])
 console.log(b.decompress(buffer));
-
+*/
+let a = new HeaderTable()
+let name = ':method'
+let value = 'GET'
+console.log(a.find(name, value))
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
