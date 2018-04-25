@@ -730,6 +730,18 @@ export default class Context {
 
 export {Entry};
 
+export const hpack_methods = {
+  huffman_decode: huffman_decode,
+  decode_integer: decode_integer,
+  decode_string: decode_string,
+  huffman_encode: huffman_encode,
+  encode_integer: encode_integer,
+  encode_string: encode_string,
+  'HeaderTable': HeaderTable,
+  'Context': Context,
+  'Entry': Entry
+}
+
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
