@@ -1,3 +1,6 @@
+import {ErrorCodes} from './constants';
+import {ConnectionError} from './error';
+
 let static_table = [
   [':authority', ''],
   [':method', 'GET'],
@@ -436,9 +439,12 @@ const decode_string = (buffer) => {
 
   if((sByte & 0x80) != 0)
     return huffman_decode(read_bytes(buffer, decode_integer(buffer, 7))).toString();
-  else
-    return read_bytes(buffer, decode_integer(buffer, 7)).toString();
+  else{
+    let int = decode_integer(buffer, 7);
+    return read_bytes(buffer, int).toString();
+  }
 }
+
 
 const huffman_encode = (buffer) => {
   let result = [];
@@ -492,6 +498,7 @@ const encode_string = (sBuffer, huffman) => {
   }
   else {
     let len = encode_integer(sBuffer.length, 7);
+    len[0] &= 0x7f;
     return Buffer.concat([len, sBuffer]);
   }
 }
@@ -602,9 +609,13 @@ export default class Context {
   }
 
   compress(headers){
+    if(!headers || !(headers instanceof Array))
+      throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid arrgument');
     let buffer = new Buffer(0);
     for(let i = 0; i < headers.length; i++){
       let header = headers[i];
+      if(!(header instanceof Entry))
+        throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalied arrgument');
       let table_lookup = this.header_table.find(header.name, header.value);
       if(table_lookup.exact){
         let header_field_indexed_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.INDEXED].prefix);
@@ -746,4 +757,5 @@ for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
-console.log(encode_string(new Buffer([0x4f]), false));
+console.log(huffman_encode(new Buffer([0x4f, 0x64, 0x61, 0x20, 0x6f, 0x67, 0x20, 0x68, 0x61, 0x6d, 0x6d, 0x65, 0x72, 0x20, 0x65, 0x72, 0x20, 0x62, 0x65, 0x73, 0x74, 0x21])));
+console.log(huffman_decode(new Buffer([0xd5, 0x20, 0xff])))
