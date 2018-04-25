@@ -4,11 +4,23 @@ import {hpack_methods, Entry} from '../src/hpack';
 import h2 from '../'
 
 describe('creating new entry', () => {
-  it('should return invalid argument, name not string', () => {
+  it('should return invalid arrgument, name not string', () => {
     let name = 123;
     let value = "GET";
     chai.expect(() => new hpack_methods.Entry(name, value)).to.throw('invalid');
   });
+});
+
+describe('add entry to header table', () => {
+  it('should return invalid arrgument', () => {
+    let entry = [':method', 'GET'];
+    chai.expect(() => new hpack_methods.HeaderTable().add(entry)).to.throw('invalid');
+  });
+
+  it('should add new entry to header table', () => {
+    let entry = new Entry(':method', 'GET');
+    chai.expect(new hpack_methods.HeaderTable().add(entry)).to.deep.equal()
+  })
 });
 
 describe('encoding header request, integer encoding', () => {
