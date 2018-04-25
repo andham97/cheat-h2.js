@@ -3,6 +3,14 @@ import {ConnectionError} from '../src/error';
 import {hpack_methods, Entry} from '../src/hpack';
 import h2 from '../'
 
+describe('creating new entry', () => {
+  it('should return invalid argument, name not string', () => {
+    let name = 123;
+    let value = "GET";
+    chai.expect(() => new hpack_methods.Entry(name, value)).to.throw('invalid');
+  });
+});
+
 describe('encoding header request, integer encoding', () => {
   it('should return invalid arrgument, prefix bigger than 8', () => {
     let num = 10;
@@ -28,7 +36,7 @@ describe('encoding header request, string encoding', () => {
   it('should return invalid arrgument, wrong arrgument', () => {
     let sBuffer = (0x00);
     let huffman = true;
-    chai.expect(() => hpack_methods.encode_string(sBuffer, huffman)).to.throw('invalid');
+    chai.expect(() => hpack_methods.encode_string(sBuffer, huffman)).to.throw('invalid')
   })
   it('should encode a http header, shot string with huffman', () => {
     let sBuffer = new Buffer([0x4f]);
