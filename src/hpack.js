@@ -1,4 +1,4 @@
-let static_table = [
+current_bytelet static_table = [
   [':authority', ''],
   [':method', 'GET'],
   [':method', 'POST'],
@@ -370,12 +370,12 @@ const literal_headers_never_indexed = {
 };
 
 const read_byte = (buffer) => {
-  return buffer[buffer.cur_byte++];
+  return buffer[buffer.current_byte++];
 }
 
 const read_bytes = (buffer, len) => {
-  let bytes = buffer.slice(buffer.cur_byte, buffer.cur_byte + len);
-  buffer.cur_byte += len;
+  let bytes = buffer.slice(buffer.current_byte, buffer.current_byte + len);
+  buffer.current_byte += len;
   return bytes;
 }
 
@@ -432,7 +432,7 @@ const decode_integer = (buffer, prefix) => {
 }
 
 const decode_string = (buffer) => {
-  let sByte = buffer[buffer.cur_byte];
+  let sByte = buffer[buffer.current_byte];
 
   if((sByte & 0x80) != 0)
     return huffman_decode(read_bytes(buffer, decode_integer(buffer, 7))).toString();
@@ -664,9 +664,9 @@ export default class Context {
 
   decompress(buffer){
     let headers = [];
-    buffer.cur_byte = 0;
-    while(buffer.cur_byte < buffer.length){
-      let fByte = buffer[buffer.cur_byte];
+    buffer.current_byte = 0;
+    while(buffer.current_byte < buffer.length){
+      let fByte = buffer[buffer.current_byte];
       let type = -1;
       for(let i = 0; i < header_field_type_spec.length; i++){
         if(((fByte >> header_field_type_spec[i].prefix) ^ (header_field_type_spec[i].mask >> header_field_type_spec[i].prefix)) == 0){
@@ -690,7 +690,7 @@ export default class Context {
             this.header_table.add(entry);
           }
           else {
-            buffer.cur_byte++;
+            buffer.current_byte++;
             let name = decode_string(buffer);
             let value = decode_string(buffer);
             let entry = new Entry(name, value);
@@ -707,7 +707,7 @@ export default class Context {
             headers.push(new Entry(header_field.name, value));
           }
           else {
-            buffer.cur_byte++;
+            buffer.current_byte++;
             let name = decode_string(buffer);
             let value = decode_string(buffer);
             headers.push(new Entry(name, value));
@@ -719,8 +719,8 @@ export default class Context {
           break;
         default:
           console.log('COMPRESSION ERROR');
-          console.log(buffer.cur_byte);
-          console.log(buffer[buffer.cur_byte].toString(16));
+          console.log(buffer.current_byte);
+          console.log(buffer[buffer.current_byte].toString(16));
           throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'unknown compression bits');
       }
     }
@@ -745,5 +745,4 @@ export const hpack_methods = {
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
-
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
