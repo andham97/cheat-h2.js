@@ -6,7 +6,7 @@ export default class Frame {
   flags = 0x0;
   payload = new Buffer(0);
 
-  constructor(type, opts){
+  constructor(type, options){
     this.type = type;
     this.flags = {...FrameFlags[this.type]};
     if(this.flags && this.flags.keys)
@@ -14,15 +14,15 @@ export default class Frame {
     Object.entries(this.flags).forEach(entry => {
       this.flags[entry[0]] = false;
     });
-    if(!opts){
+    if(!options){
       return;
     }
-    this.stream_id = typeof opts.stream_id != 'undefined' ? opts.stream_id : -1;
+    this.stream_id = typeof options.stream_id != 'undefined' ? options.stream_id : -1;
     Object.entries(this.flags).forEach(flag => {
-      this.flags[flag[0]] = (opts.flags & FrameFlags[this.type][flag[0]]) != 0;
+      this.flags[flag[0]] = (options.flags & FrameFlags[this.type][flag[0]]) != 0;
     });
-    if(opts.payload)
-      this.payload = Buffer.concat([new Buffer(0), opts.payload]);
+    if(options.payload)
+      this.payload = Buffer.concat([new Buffer(0), options.payload]);
     else
       this.payload = new Buffer(0);
   }

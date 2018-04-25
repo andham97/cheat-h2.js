@@ -12,13 +12,12 @@ export default class IStream extends Stream {
   current_data_buffer = new Buffer(0);
   current_header_buffer = new Buffer(0);
   flag_backlog = [];
+  current_response
 
   constructor(id, session){
     super(id, session);
     this.on('recieve_frame', this.recieve_frame);
     this.on('transition_state', this.transition_state);
-    console.log();
-    console.log('Created Stream ID: ' + this.stream_id);
   }
 
   recieve_frame(frame){
@@ -34,16 +33,19 @@ export default class IStream extends Stream {
     switch(frame.type){
       case FrameTypes.HEADERS:
         this.emit('transition_state', StreamState.STREAM_OPEN);
-        this.delegate_frame(frame);
+        this.current_header_buffer = Buffer.concat([frame.payload]);
+        if(frame.flags.END_STREAM){
+          this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
+          this.handle_request();
+        }
         break;
       case FrameTypes.PUSH_PROMISE:
         this.emit('transition_state', StreamState.STREAM_RESERVED_LOCAL);
-        this.delegate_frame(frame);
         break;
       case FrameTypes.PRIORITY:
         break;
       default:
-        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 
@@ -57,24 +59,20 @@ export default class IStream extends Stream {
       case FrameTypes.WINDOW_UPDATE:
         break;
       default:
-        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 
   handle_open_frame(frame){
+    if(!this.check_flag('END_HEADERS') && frame.type != FrameTypes.CONTINUATION)
+      throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'not finished sending headers');
     switch(frame.type){
-      case FrameTypes.HEADERS:
-        this.current_header_buffer = Buffer.concat([frame.payload]);
-        if(frame.flags.END_STREAM)
-          this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
-        if(frame.flags.END_HEADERS)
-          this.handle_request();
-        break;
       case FrameTypes.CONTINUATION:
+        if(this.check_flag('END_HEADERS'))
         this.current_header_buffer = Buffer.concat([this.current_header_buffer, frame.payload]);
         if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
-        if(frame.falgs.END_HEADERS)
+        if(frame.flags.END_HEADERS)
           this.handle_request();
         break;
       case FrameTypes.DATA:
@@ -103,7 +101,7 @@ export default class IStream extends Stream {
       case FrameTypes.PRIORITY:
         break;
       default:
-        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 
@@ -116,7 +114,7 @@ export default class IStream extends Stream {
         this.emit('transition_state', StreamState.STREAM_CLOSED);
         break;
       default:
-        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 
@@ -127,7 +125,7 @@ export default class IStream extends Stream {
       case FrameTypes.RST_STREAM:
         break;
       default:
-        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new StreamError(ErrorCodes.STREAM_CLOSED, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 
@@ -168,6 +166,8 @@ export default class IStream extends Stream {
   }
 
   delegate_frame(frame){
+    console.log(frame.type);
+    console.log(this.stream_state);
     switch(this.stream_state){
       case StreamState.STREAM_IDLE:
         this.handle_idle_frame(frame);
@@ -197,6 +197,8 @@ export default class IStream extends Stream {
 
   handle_request(){
     let headers = this.session.in_context.decompress(this.current_header_buffer);
+    console.log(this.current_header_buffer);
+    console.log(headers);
     this.session.update_headers(headers);
     let request = new Request(this.session.headers, this.current_data_buffer);
     let response = new Response(this.session.headers);
@@ -206,8 +208,7 @@ export default class IStream extends Stream {
     let next_handler = this.generate_handler_chain(request, response, handlers);
     if(next_handler)
       next_handler();
-    let frames = this.convert_response(response);
-    console.log('Sending response');
+    let frames = this.convert_response(request, response);
     frames.forEach(frame => {
       this.send_frame(frame);
     });
@@ -231,9 +232,20 @@ export default class IStream extends Stream {
       if(flag_pair[1])
         this.flag_backlog.push(flag_pair[0]);
     });
+    console.log(this.flag_backlog);
   }
 
-  convert_response(response){
+  check_flag(flag){
+    if(typeof flag !== 'string')
+      return;
+    for(let i = this.flag_backlog.length - 1; i >= 0; i--){
+      if(this.flag_backlog[i] == flag)
+        return true;
+    }
+    return false;
+  }
+
+  convert_response(request, response){
     let hf = new HeadersFrame();
     let df = new DataFrame();
     hf.stream_id = this.stream_id;
@@ -253,11 +265,14 @@ export default class IStream extends Stream {
     });
     df.payload = response.payload;
     hf.payload = this.session.out_context.compress(headers);
+    if(request.headers[':method'] == 'HEAD'){
+      hf.flags.END_STREAM = true;
+      return [hf];
+    }
     return [hf, df];
   }
 
   send_frame(frame){
-    console.log(frame);
     switch(this.stream_state){
       case StreamState.STREAM_HALF_CLOSED_REMOTE:
         if(frame.flags.END_STREAM)

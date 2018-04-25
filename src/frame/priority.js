@@ -1,4 +1,4 @@
-import ConnectionError, StreamError from '../error';
+import {ConnectionError, StreamError} from '../error';
 import Frame from './frame';
 import {FrameTypes, ErrorCodes} from '../constants';
 
@@ -9,6 +9,10 @@ export default class PriorityFrame extends Frame{
 
   constructor(options){
     super(FrameTypes.PRIORITY, options);
+    if(!options)
+      return;
+    if(this.stream_id == 0)
+      throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'stream id = 0');
     if(this.payload.length != 5)
       throw new StreamError(ErrorCodes.FRAME_SIZE_ERROR, 'wrong payload length: ' + this.payload.length);
     this.exclusive = (this.payload.readUInt32BE(0) & (0x1 << 31)) != 0;

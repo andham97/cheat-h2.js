@@ -4,12 +4,13 @@ import SettingsFrame from '../frame/settings';
 import WindowUpdateFrame from '../frame/window_update';
 import DataFrame from '../frame/data';
 import GoawayFrame from '../frame/go_away';
+import RSTStreamFrame from '../frame/rst_stream';
 import Settings from './settings';
 import Parser from '../frame/parser';
 import IStream from './istream';
 import ControlStream from './cstream';
 import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags, StreamState} from '../constants';
-import ConnectionError from '../error';
+import {ConnectionError, StreamError} from '../error';
 import Context from '../hpack';
 import FlowControl from './flow_control';
 
@@ -62,7 +63,7 @@ export default class Session extends EventEmitter {
         data = data.slice(24);
       }
       if(!this.is_init)
-        return this.error(new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid first frame'));
+        return this.socket.destroy();
       try {
         this.process_frame(data);
       }
@@ -74,16 +75,9 @@ export default class Session extends EventEmitter {
       this.error(error);
     });
 
-    test_frames.forEach(frame => {
-      try{
-        //this.delegate_frame(frame);
-      }
-      catch(error){
-        this.error(error);
-      }
+    this.socket.on('close', () => {
+      this.manager.session_close(this);
     });
-
-    this.socket.on('close', console.log);
   }
 
   update_headers(headers){
@@ -94,16 +88,14 @@ export default class Session extends EventEmitter {
 
   process_frame(data){
     let frame = this.parser.decode(data);
-    if(frame instanceof DataFrame && !this.flow_control.recieve(data))
+    if(!(frame instanceof Frame))
       return;
+    if((frame instanceof DataFrame) && !this.flow_control.recieve(frame.payload))
+      throw new ConnectionError(ErrorCodes.FLOW_CONTROL_ERROR, 'recieving flow-control bounds exceeded');
     this.delegate_frame(frame);
   }
 
   delegate_frame(frame){
-    console.log('\nrecieving');
-    console.log(frame);
-    if(!(frame instanceof Frame))
-      return;
     for(let i = frame.stream_id-2; i > 0; i-=2){
       if(this.streams[i].stream_state == StreamState.STREAM_IDLE)
         this.streams[i].emit('transition_state', StreamState.STREAM_CLOSED);
@@ -120,62 +112,40 @@ export default class Session extends EventEmitter {
   }
 
   send_frame(frame){
-    console.log('\nsending');
+    console.log('\nSENDING');
     console.log(frame);
     if(frame.debug_data)
       console.log(frame.debug_data.toString());
-    let data = this.parser.encode(frame);
-    if(!this.flow_control.send(data))
-      return; // FLOW ERROR
-    this.socket.write(data);
+    if((frame instanceof DataFrame) && !this.flow_control.send(frame.payload))
+      throw new ConnectionError(ErrorCodes.FLOW_CONTROL_ERROR, 'recieving flow-control bounds exceeded');
+    this.socket.write(this.parser.encode(frame), () => {
+      if(frame instanceof GoawayFrame){
+        console.log('DESTROING SOCKET');
+        this.socket.destroy();
+      }
+    });
   }
 
   error(error){
-    //if(error.error_code == undefined && error.code != 'ECONNRESET')
-      //throw error;
     console.log();
     console.log(ErrorCodes.keys[error.error_code]);
     console.log(error);
+    if(error.type == 0x1){
+      let error_frame = new GoawayFrame();
+      error_frame.last_stream_id = Math.max(error.stream_id - 2, 0);
+      error_frame.stream_id = 0;
+      error_frame.error_code = error.error_code;
+      error_frame.debug_data = new Buffer(error.message, 'utf-8');
+      this.send_frame(error_frame);
+    }
+    else if(error.type == 0x2){
+      let error_frame = new RSTStreamFrame();
+      error_frame.stream_id = error.stream_id;
+      error_frame.error_code = error.error_code;
+      this.send_frame(error_frame);
+    }
+    else {
+      console.log('UNDEFINED ERROR TYPE: ' + error.constructor.name);
+    }
   }
 }
-
-const test_frames = [
-  new Frame(FrameTypes.SETTINGS, {
-    stream_id: 0,
-    flags: 0x0
-  }),
-  new Frame(FrameTypes.WINDOW_UPDATE, {
-    stream_id: 0,
-    flags: 0x0
-  }),
-  new Frame(FrameTypes.HEADERS, {
-    stream_id: 1,
-    flags: 0x0,
-    payload: new Buffer([0x40, 0x84, 0xb9, 0x58, 0xd3, 0x3f])
-  }),
-  new Frame(FrameTypes.CONTINUATION, {
-    stream_id: 1,
-    flags: 0x0,
-    payload: new Buffer([0x87, 0x61, 0x25, 0x42, 0x57, 0x9d])
-  }),
-  new Frame(FrameTypes.CONTINUATION, {
-    stream_id: 1,
-    flags: 0x0,
-    payload: new Buffer([0x34, 0xd1, 0x40, 0x85, 0xb9, 0x49])
-  }),
-  new Frame(FrameTypes.CONTINUATION, {
-    stream_id: 1,
-    flags: 0x4,
-    payload: new Buffer([0x53, 0x39, 0xe4, 0x83, 0xc5, 0x83, 0x7f])
-  }),
-  new Frame(FrameTypes.CONTINUATION, {
-    stream_id: 1,
-    flags: 0x0,
-    payload: new Buffer([0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0])
-  }),
-  new Frame(FrameTypes.DATA, {
-    stream_id: 1,
-    flags: 0x1,
-    payload: new Buffer([0x54, 0x65, 0x73, 0x74])
-  })
-];

@@ -1,5 +1,5 @@
 import { FrameTypes, ErrorCodes } from '../constants';
-import ConnectionError from '../error';
+import {ConnectionError} from '../error';
 import Frame from './frame';
 
 export default class HeadersFrame extends Frame{
@@ -11,11 +11,15 @@ export default class HeadersFrame extends Frame{
 
   constructor(options){
     super(FrameTypes.HEADERS, options);
+    if(!options)
+      return;
+    if(this.stream_id == 0)
+      throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-zero stream id');
     if(this.flags.PADDED){
       let padding_length = this.payload.readUInt8(0);
-      if(Buffer.compare(new Buffer(padding_length), this.payload.slice(this.payload.padding - padding_length)) != 0);
+      if(Buffer.compare(new Buffer(padding_length), this.payload.slice(this.payload.length - padding_length)) != 0)
         throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-zero padding bytes');
-      this.payload = this.payload.slice(1, this.payload.padding - padding_length);
+      this.payload = this.payload.slice(1, this.payload.length - padding_length);
     }
     if (this.flags.PRIORITY) {
       this.exclusive = (this.payload.readUInt32BE(0)&(0x1 << 31))!= 0;

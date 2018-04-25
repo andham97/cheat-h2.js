@@ -2,6 +2,7 @@ import IStream from './istream';
 import {FrameTypes, ErrorCodes} from '../constants';
 import {ConnectionError} from '../error';
 import SettingsFrame from '../frame/settings';
+import PingFrame from '../frame/ping';
 
 export default class ControlStream extends IStream {
   constructor(id, session){
@@ -28,9 +29,19 @@ export default class ControlStream extends IStream {
         this.session.flow_control.outgoing = frame.window_size;
         break;
       case FrameTypes.GOAWAY:
+        console.log(frame.debug_data.toString());
+        console.log(this.session.socket);
+        this.session.socket.destroy();
+        break;
+      case FrameTypes.PING:
+        let ack_ping_frame = new PingFrame();
+        ack_ping_frame.flags.ACK = true;
+        ack_ping_frame.payload = frame.payload;
+        ack_ping_frame.stream_id = 0;
+        this.session.send_frame(ack_ping_frame);
         break;
       default:
-        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type]);
+        throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);
     }
   }
 }

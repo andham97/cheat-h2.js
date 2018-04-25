@@ -8,6 +8,10 @@ export default class PushPromiseFrame extends Frame{
 
   constructor(options){
     super(FrameTypes.PUSH_PROMISE, options);
+    if(!options)
+      return;
+    if(this.stream_id == 0)
+      throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'stream id = 0');
     if(this.flags.PADDED){
       let padding_length = this.payload.readUInt8(0);
       if(Buffer.compare(new Buffer(padding_length), this.payload.slice(this.payload.padding - padding_length)) != 0);

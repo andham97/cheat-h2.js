@@ -721,7 +721,7 @@ export default class Context {
           console.log('COMPRESSION ERROR');
           console.log(buffer.cur_byte);
           console.log(buffer[buffer.cur_byte].toString(16));
-          return [];
+          throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'unknown compression bits');
       }
     }
     return headers;

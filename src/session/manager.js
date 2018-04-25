@@ -6,12 +6,14 @@ export default class SessionManager extends EventEmitter {
   next_id = 0;
   paths = {
     get: {},
-    post: {}
+    post: {},
+    head: {}
   };
 
   constructor(){
     super();
     this.on('session_close', this.session_close);
+    this.add_session({on: ()=> {}, write: (data)=>{}});
   }
 
   add_session(socket){
@@ -28,11 +30,15 @@ export default class SessionManager extends EventEmitter {
 
   session_close(session){
     delete this.sessions[session.session_id];
+    console.log(this.sessions.toString());
   }
 
   register_get(path, handler){
     if(!this.paths.get[path])
       this.paths.get[path] = [];
+    if(!this.paths.head[path])
+      this.paths.head[path] = [];
+    this.paths.head[path].push(handler);
     this.paths.get[path].push(handler);
   }
 

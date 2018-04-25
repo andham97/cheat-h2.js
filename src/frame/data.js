@@ -1,12 +1,14 @@
 import { FrameTypes, ErrorCodes } from '../constants';
-import ConnectionError from '../error';
+import {ConnectionError} from '../error';
 import Frame from './frame';
 
 export default class DataFrame extends Frame {
   padding;
 
-  constructor(opts){
-    super(FrameTypes.DATA, opts);
+  constructor(options){
+    super(FrameTypes.DATA, options);
+    if(!options)
+      return;
     if(this.flags.PADDED){
       if(this.payload < 1){
         throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'missing bytes for padding control');

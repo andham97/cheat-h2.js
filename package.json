@@ -1,5 +1,5 @@
 {
-  "name": "cheat-js",
+  "name": "cheath2.js",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,14 +10,24 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/andham97/cheat-js.git"
+    "url": "git+https://github.com/andham97/cheat-h2.js.git"
   },
-  "author": "Andreas Hammer, Dina Rosvoll, Oda Steinland Skaug",
+  "author": {
+    "name": "Andreas Hammer",
+    "email": "andreas.hammer.97@protonmail.com",
+    "url": "https://github.com/andham97"
+  },
+  "contributers": [
+    {
+      "name": "Oda Steinland Skaug",
+      "url": "https://github.com/odask"
+    }
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/andham97/cheat-js/issues"
+    "url": "https://github.com/andham97/cheat-h2.js/issues"
   },
-  "homepage": "https://github.com/andham97/cheat-js#readme",
+  "homepage": "https://github.com/andham97/cheat-h2.js#readme",
   "babel": {
     "plugins": [
       "transform-class-properties",
@@ -43,8 +53,5 @@
     "flow-bin": "^0.70.0",
     "mocha": "^5.1.0",
     "nodemon": "^1.17.3"
-  },
-  "dependencies": {
-    "node-bitarray": "^0.1.0"
   }
 }

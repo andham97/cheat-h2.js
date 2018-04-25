@@ -1,5 +1,5 @@
 import { FrameTypes, ErrorCodes, SettingsEntries } from '../constants';
-import ConnectionError from '../error';
+import {ConnectionError} from '../error';
 import Frame from './frame';
 
 export default class SettingsFrame extends Frame {
@@ -7,6 +7,10 @@ export default class SettingsFrame extends Frame {
 
   constructor(options){
     super(FrameTypes.SETTINGS, options);
+    if(!options)
+      return;
+    if(this.stream_id != 0)
+      throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-zero stream id');
     if(this.payload.length % 6 != 0)
       throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-6 octet frame size');
     if(this.flags.ACK && this.payload.length != 0)
