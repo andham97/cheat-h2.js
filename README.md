@@ -27,7 +27,6 @@
 8. DOS security see section 10.5
 9. Server authority see section 10.1
 10. IE attach see section 10.3
-11. 
 
 # Usage
 
