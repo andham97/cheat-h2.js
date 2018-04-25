@@ -24,7 +24,7 @@ export default class HeadersFrame extends Frame{
     if (this.flags.PRIORITY) {
       this.exclusive = (this.payload.readUInt32BE(0)&(0x1 << 31))!= 0;
       this.weight = this.payload.readUInt8(4);
-      this.stream_dependency = (this.payload.readUInt32BE(0)^(0x1 << 31));
+      this.stream_dependency = this.payload.readUInt32BE(0) & 0x7fffffff;
       this.payload = this.payload.slice(5);
     }
   }

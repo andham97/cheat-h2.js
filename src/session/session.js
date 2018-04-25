@@ -107,13 +107,19 @@ export default class Session extends EventEmitter {
     }
     let stream = this.streams[frame.stream_id];
     if(stream)
-      return stream.emit('recieve_frame', frame);
-    if(frame.stream_id == 0)
-      stream = new ControlStream(frame.stream_id, this);
-    else
-      stream = new IStream(frame.stream_id, this);
-    this.streams[frame.stream_id] = stream;
-    stream.emit('recieve_frame', frame);
+      stream.emit('recieve_frame', frame);
+    else {
+      if(frame.stream_id == 0)
+        stream = new ControlStream(frame.stream_id, this);
+      else
+        stream = new IStream(frame.stream_id, this);
+      this.streams[frame.stream_id] = stream;
+      this.priority.add(stream);
+      stream.emit('recieve_frame', frame);
+    }
+    this.priority.get_next_streams().forEach((stream) => {
+      if(stream.streamState == StreamState.HALF_CLOSED)
+    });
   }
 
   send_frame(frame){

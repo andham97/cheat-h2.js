@@ -36,7 +36,6 @@ export default class IStream extends Stream {
         this.current_header_buffer = Buffer.concat([frame.payload]);
         if(frame.flags.END_STREAM){
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
-          this.handle_request();
         }
         break;
       case FrameTypes.PUSH_PROMISE:
@@ -72,14 +71,11 @@ export default class IStream extends Stream {
         this.current_header_buffer = Buffer.concat([this.current_header_buffer, frame.payload]);
         if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
-        if(frame.flags.END_HEADERS)
-          this.handle_request();
         break;
       case FrameTypes.DATA:
         this.current_data_buffer = Buffer.concat([this.current_data_buffer, frame.payload]);
         if(frame.flags.END_STREAM){
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
-          this.handle_request();
         }
         break;
       case FrameTypes.RST_STREAM:
@@ -150,8 +146,8 @@ export default class IStream extends Stream {
         if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_REMOTE].indexOf(new_state) != -1)
           this.stream_state = new_state;
         break;
-      case StreamState.STREAM_OPEN:
-        if([StreamState.STREAM_CLOSED, StreamState.STREAM_HALF_CLOSED_REMOTE, StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
+      case StreamState.STREAM_RESERVED_REMOTE:
+        if([StreamState.STREAM_CLOSED StreamState.STREAM_HALF_CLOSED_LOCAL].indexOf(new_state) != -1)
           this.stream_state = new_state;
         break;
       case StreamState.STREAM_OPEN:
@@ -159,6 +155,10 @@ export default class IStream extends Stream {
           this.stream_state = new_state;
         break;
       case StreamState.STREAM_HALF_CLOSED_REMOTE:
+        if(StreamState.STREAM_CLOSED == new_state)
+          this.stream_state = new_state;
+        break;
+      case StreamState.STREAM_HALF_CLOSED_LOCAL:
         if(StreamState.STREAM_CLOSED == new_state)
           this.stream_state = new_state;
         break;
