@@ -43,3 +43,12 @@ export default class Frame {
     return this.payload;
   }
 }
+console.log('heii')
+let a = new Frame(0x0)
+let buffer = new Buffer([0x4f, 0x61, 0x64])
+let h = a.set_data(buffer)
+let b = a.payload;
+console.log(buffer)
+console.log(a)
+console.log(h)
+console.log(b)
