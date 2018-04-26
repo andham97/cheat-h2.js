@@ -356,14 +356,6 @@ const header_field_type_spec = [
   }
 ];
 
-const literal_headers = {
-  'content-MD5': true
-};
-
-const literal_headers_never_indexed = {
-  'set-cookie': true
-};
-
 const read_byte = (buffer) => {
   return buffer[buffer.current_byte++];
 }
@@ -642,49 +634,19 @@ export default class Context {
       }
       else {
         if(table_lookup.index != 0){
-          if(literal_headers_never_indexed[header.name]){
-            let header_field_literal_never_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_NEVER].prefix);
-            header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
-            let header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_never_index_buffer, header_field_literal_never_value_buffer]);
-          }
-          else if(literal_headers[header.name]){
-            let header_field_literal_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL].prefix);
-            header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
-            let header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_index_buffer, header_field_literal_value_buffer]);
-          }
-          else {
-            let header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
-            header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
-            let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
-            this.header_table.add(header);
-          }
+          let header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
+          header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+          let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+          buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
+          this.header_table.add(header);
         }
         else {
-          if(literal_headers_never_indexed[header.name]){
-            let header_field_literal_never_index_buffer = new Buffer(1);
-            header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
-            let header_field_literal_never_name_buffer = encode_string(new Buffer(header.name), true);
-            let header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_never_index_buffer, header_field_literal_never_name_buffer, header_field_literal_never_value_buffer]);
-          }
-          else if(literal_headers[header.name]){
-            let header_field_literal_index_buffer = new Buffer(1);
-            header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
-            let header_field_literal_name_buffer = encode_string(new Buffer(header.name), true);
-            let header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_index_buffer, header_field_literal_name_buffer, header_field_literal_value_buffer]);
-          }
-          else {
-            let header_field_literal_inc_index_buffer = new Buffer(1);
-            header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
-            let header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
-            let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
-            buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, header_field_literal_inc_value_buffer]);
-            this.header_table.add(header);
-          }
+          let header_field_literal_inc_index_buffer = new Buffer(1);
+          header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+          let header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
+          let header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+          buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, header_field_literal_inc_value_buffer]);
+          this.header_table.add(header);
         }
       }
     }
