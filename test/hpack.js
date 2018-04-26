@@ -265,6 +265,16 @@ describe('compress function', () => {
   it('should compress entry as literal headers never indexed', () => {
     let entries = [new Entry('set-cookie', 'true')];
     chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x1f, 0x28, 0x83, 0x4d, 0x96, 0x97]));
+  });
+
+  it('should compress entry as literal headers', () => {
+    let entries = [new Entry('content-MD5', 'true')];
+    chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x40, 0x88, 0x21, 0xea, 0x49, 0x6a, 0x4a, 0xd4, 0xc8, 0xdf, 0x83, 0x4d, 0x96, 0x97]));
+  })
+
+  it('should compress entry as somethin', () => {
+    let entries = [new Entry('Testing', 'true')];
+    chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x40, 0x85, 0x49, 0x50, 0x93, 0x55, 0x37, 0x83, 0x4d, 0x96, 0x97]));
   })
 });
 
