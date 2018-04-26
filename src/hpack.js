@@ -549,9 +549,6 @@ class HeaderTable {
   }
 
   add(entry){
-    console.log('entry size: ' + entry.size);
-    console.log('this.size: ' + this.size);
-    console.log('max_size: ' + this.max_size)
     if(!(entry instanceof Entry))
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(entry.size > this.max_size){
@@ -572,6 +569,9 @@ class HeaderTable {
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(index < 1 || index > static_table.length + this.entries.length)
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
+
+    console.log('index: ' + index)
+    console.log('static length: ' + static_table.length)
     if(index < static_table.length)
       return static_table[index - 1];
     else
