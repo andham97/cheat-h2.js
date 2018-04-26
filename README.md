@@ -28,6 +28,16 @@
 9. Server authority see section 10.1
 10. IE attach see section 10.3
 
+## Installation
+cheat-h2.js is available through the NPM registry.
+
+Before installing note that Node.js 9.3.0 or higher is required.
+
+Installation is done using the `npm install` command:
+```bash
+$ npm install cheath2.js
+```
+
 ## Usage
 ```javascript
 import cheath2 from 'cheath2.js';
@@ -44,14 +54,6 @@ server.get('/', (req, res) => {
 });
 
 server.listen(8000);
-```
-
-## Installation
-cheat-h2.js is available through the NPM registry.
-Before installing note that Node.js 9.3.0 or higher is required.
-Installation is done using the `npm install` command:
-```bash
-$ npm install cheath2.js
 ```
 
 ## Tests
