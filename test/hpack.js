@@ -2,6 +2,7 @@ import chai from 'chai';
 import {ConnectionError} from '../src/error';
 import {hpack_methods, Entry} from '../src/hpack';
 import h2 from '../'
+import Context from '../src/hpack';
 
 describe('creating new entry', () => {
   it('should return invalid arrgument, name not string', () => {
@@ -251,10 +252,38 @@ describe('decompress function', () => {
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'Oda')])
   });
 
-  it('should decompress entries, literal header field with incremental indexing - new entry', () => {
+  it('should decompress entries, literal header field with incremental indexing - new name', () => {
     let buffer = new Buffer([0x40]);
     buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true), hpack_methods.encode_string(new Buffer([0x4f]), true)]);
     buffer.current_byte = 0;
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry('Oda', 'O')])
+  });
+
+  it('should decompress entries, literal header field without indexing', () => {
+    let buffer = hpack_methods.encode_integer(4, 4)
+    buffer[0] &= [0x0f];
+    buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true)]);
+    buffer.current_byte = 0;
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':path', 'Oda')]);
+  });
+
+  it('should decompress entries, literal header field without indexing - new name', () => {
+    let buffer = new Buffer([0x00]);
+    buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true), hpack_methods.encode_string(new Buffer([0x4f]), true)]);
+    buffer.current_byte = 0;
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry('oda', 'O')])
+  });
+
+  it('should change dynamic table size', () => {
+    let new_size = 5;
+    let buffer = hpack_methods.encode_integer(new_size,4);
+    buffer[0] |= 0x20;
+    buffer = Buffer.concat([buffer]);
+    buffer.current_byte = 0;
+    let a = new hpack_methods.Context()
+    let old_table_size = a.header_table.max_size;
+    let decompress = a.decompress(buffer);
+    chai.expect(a.header_table.max_size).to.deep.equal(new_size);
+
   });
 });

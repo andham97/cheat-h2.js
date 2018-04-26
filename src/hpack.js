@@ -720,6 +720,7 @@ export default class Context {
           headers.push(header);
           break;
         case header_field_type.LITERAL_INC:
+        console.log('1')
           if((fByte & 0x3f) != 0){
             let index = decode_integer(buffer, 6);
             let header_field = this.header_table.get(index);
@@ -753,6 +754,7 @@ export default class Context {
           }
           break;
         case header_field_type.HEADER_TABLE_SIZE:
+          console.log('')
           let new_max_header_table_size = decode_integer(buffer, 5);
           this.header_table.set_max_size(new_max_header_table_size);
           break;
@@ -793,11 +795,20 @@ let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96])
 console.log(b.decompress(buffer));
 */
 
-
-
 let a = new Context()
-let buffer = new Buffer([0x40]);
+let buffer = encode_integer(5, 4)
+buffer[0] |= 0x20;
+buffer = Buffer.concat([buffer]);
+buffer.current_byte = 0;
+console.log(a.header_table.max_size)
+console.log(a.decompress(buffer));
+console.log(a.header_table.max_size)
+
+/*
+let a = new Context()
+let buffer = new Buffer([0x00]);
 buffer = Buffer.concat([buffer, encode_string(new Buffer([0x4f, 0x64, 0x61]), true), encode_string(new Buffer([0x4f]), true)]);
 buffer.current_byte = 0;
 console.log(a.decompress(buffer));
+*/
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);
