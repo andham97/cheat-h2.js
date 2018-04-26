@@ -88,6 +88,10 @@ describe('testing methods attached to header table', () => {
     chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
   });
 
+  it('should set new max table size', () => {
+    let size = 400
+    chai.expect(new hpack_methods.Context().set_max_table_size(size)).to.deep.equal();
+  });
 });
 
 describe('encoding header request, integer encoding', () => {
@@ -258,10 +262,10 @@ describe('compress function', () => {
     chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96]))
   });
 
-  it('should set new max table size', () => {
-    let size = 400
-    chai.expect(new hpack_methods.Context().set_max_table_size(size)).to.deep.equal();
-  });
+  it('should compress entry as literal headers never indexed', () => {
+    let entries = [new Entry('set-cookie', 'true')];
+    chai.expect(new hpack_methods.Context().compress(entries)).to.deep.equal(new Buffer([0x1f, 0x28, 0x83, 0x4d, 0x96, 0x97]));
+  })
 });
 
 
