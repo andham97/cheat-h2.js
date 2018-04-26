@@ -69,6 +69,7 @@ export default class IStream extends Stream {
     switch(frame.type){
       case FrameTypes.CONTINUATION:
         if(this.check_flag('END_HEADERS'))
+          throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'recieved continuation frame after END_HEADERS flag set');
         this.current_header_buffer = Buffer.concat([this.current_header_buffer, frame.payload]);
         if(frame.flags.END_STREAM)
           this.emit('transition_state', StreamState.STREAM_HALF_CLOSED_REMOTE);
@@ -316,6 +317,6 @@ export default class IStream extends Stream {
           this.emit('transition_state', StreamState.STREAM_CLOSED);
         break;
     }
-    this.session.send_frame(frame);
+    this.session.send_frame_istream(frame);
   }
 }
