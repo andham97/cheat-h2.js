@@ -42,8 +42,9 @@ describe('testing methods attached to header table', () => {
   it('should test set max size', () => {
     let new_size = 100;
     let a = new hpack_methods.HeaderTable();
-    a.size = 200;
-    chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
+    a.add(new Entry('osidhfoasbfoahsdoifhasoihfoidhfoishdafhasodifhioasdhfoiashdfoihasdofhasoidhfosahdfoihasdiofhasod', 'asgduogasdfoghasoudfgiausdgfiuasgdfiuasgdfiugsdiufgiuasgdfiuagsdiufgasiudgfiuagsdiufgasiudfgiuasdgfiusa'));
+
+    chai.expect(a.set_max_size(new_size)).to.equal();
   })
 
   it('should set new max size', () => {

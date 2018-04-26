@@ -562,6 +562,7 @@ class HeaderTable {
     }
     this.entries = [entry].concat(this.entries);
     this.size += entry.size;
+    console.log(this.size)
   }
 
   get(index){
@@ -611,11 +612,14 @@ class HeaderTable {
     new_size = Math.min(new_size, 4096);
     if(this.max_size == new_size)
       return;
+    console.log(this.size)
+    console.log(new_size)
     while(this.size > new_size){
       this.size -= this.entries[this.entries.length - 1].size;
       this.entries.splice(this.entries.length - 1, 1);
     }
     this.max_size = new_size;
+    console.log(this.max_size)
   }
 }
 
