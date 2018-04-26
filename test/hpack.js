@@ -318,6 +318,13 @@ describe('decompress function', () => {
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry('oda', 'O')])
   });
 
+  it('should decompress entries, literal header field Never indexed', () => {
+    let buffer = new Buffer([0x10]);
+    buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true), hpack_methods.encode_string(new Buffer([0x4f]), true)]);
+    buffer.current_byte = 0;
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry('oda', 'O')])
+  });
+
   it('should change dynamic table size', () => {
     let new_size = 5;
     let buffer = hpack_methods.encode_integer(new_size,4);
