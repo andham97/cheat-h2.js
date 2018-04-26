@@ -39,6 +39,13 @@ describe('testing methods attached to header table', () => {
     chai.expect(new hpack_methods.HeaderTable().find(name, value)).to.deep.equal({index: 2, exact: true});
   });
 
+  it('should test set max size', () => {
+    let new_size = 100;
+    let a = new hpack_methods.HeaderTable();
+    a.size = 200;
+    chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
+  })
+
   it('should set new max size', () => {
     let new_size = 400;
     chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
