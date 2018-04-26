@@ -5,6 +5,7 @@ import Request from './request';
 import Response from './response';
 import HeadersFrame from '../frame/header';
 import DataFrame from '../frame/data';
+import PushPromiseFrame from '../frame/push_promise';
 import RSTStreamFrame from '../frame/rst_stream';
 import {ConnectionError, StreamError} from '../error';
 
@@ -202,10 +203,10 @@ export default class IStream extends Stream {
 
   handle_request(){
     let headers = this.session.in_context.decompress(this.current_header_buffer);
-    console.log(headers);
     this.session.update_headers(headers);
     let request = new Request(this.session.headers, this.current_data_buffer);
     let response = new Response(this.session.headers);
+    console.log(request);
     let method = request.headers[':method'];
     let path = request.headers[':path'];
     let handlers = this.session.manager.get_handlers(method, path);
@@ -250,13 +251,15 @@ export default class IStream extends Stream {
   }
 
   convert_response(request, response){
-    let hf = new HeadersFrame();
-    let df = new DataFrame();
-    hf.stream_id = this.stream_id;
-    hf.flags.END_HEADERS = true;
-    df.stream_id = this.stream_id;
-    df.flags.END_STREAM = true;
+    if(!response.payload)
+      throw new Error('no response to client');
     response.headers['content-length'] = response.payload.length;
+    let frames = [];
+    let push_frames = [];
+    let header_frame = new HeadersFrame();
+    header_frame.stream_id = this.stream_id;
+    header_frame.flags.END_HEADERS = true;
+
     let headers = Object.entries(response.headers).map(e => {
       return new Entry(e[0], e[1]);
     });
@@ -267,13 +270,41 @@ export default class IStream extends Stream {
         return 1;
       return 0;
     });
-    df.payload = response.payload;
-    hf.payload = this.session.out_context.compress(headers);
-    if(request.headers[':method'] == 'HEAD'){
-      hf.flags.END_STREAM = true;
-      return [hf];
+    for(let i = 0; i < response.required_paths.length; i++){
+      let path = response.required_paths[i];
+      let current_headers = {...this.session.headers};
+      current_headers[':path'] = '/index.js';
+      let current_request = new Request(current_headers, new Buffer(0));
+      let current_response = new Response(current_headers);
+      let next_handler = this.generate_handler_chain(current_request, current_response, this.session.manager.get_handlers(path.method, path.path));
+      if(next_handler)
+        next_handler();
+      let push_promise = new PushPromiseFrame();
+      push_promise.flags.END_HEADERS = true;
+      push_promise.promised_id = 2; // TODO: fix ostream
+      push_promise.stream_id = this.stream_id;
+      push_promise.payload = this.session.out_context.compress(Object.entries(current_headers).map(header => new Entry(header[0], header[1])));
+      let current_push_frames = this.convert_response(current_request, current_response);
+      current_push_frames.forEach(frame => {
+        frame.stream_id = 2;
+      });
+      push_frames = push_frames.concat(current_push_frames);
+      frames.push(push_promise);
     }
-    return [hf, df];
+    header_frame.payload = this.session.out_context.compress(headers);
+    if(response.payload.length != 0 && request.headers[':method'] != 'HEAD'){
+      let data_frame = new DataFrame();
+      data_frame.stream_id = this.stream_id;
+      data_frame.flags.END_STREAM = true;
+      data_frame.payload = response.payload;
+      frames.push(header_frame, data_frame);
+    }
+    else {
+      header_frame.flags.END_STREAM = true;
+      frames.push(header_frame);
+    }
+    frames = frames.concat(push_frames);
+    return frames;
   }
 
   send_frame(frame){

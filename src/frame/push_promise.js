@@ -3,7 +3,7 @@ import Frame from './frame';
 import {FrameTypes, ErrorCodes} from '../constants';
 
 export default class PushPromiseFrame extends Frame{
-  padding;
+  padding_length;
   promised_id;
 
   constructor(options){
@@ -23,14 +23,10 @@ export default class PushPromiseFrame extends Frame{
   }
 
   get_payload(){
-    if(this.payload.length < 4)
-      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'frame size under 4');
-    if(this.flags.PADDED){
-      if(this.payload.length < 5){
-        throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'frame size under 5');
-      }
-      this.payload = Buffer.concat([new Buffer([padding.length]), this.payload, this.padding]);
-    }
+    if(this.flags.PADDED)
+      this.payload = Buffer.concat([new Buffer([this.padding_length]), new Buffer([(this.promised_id >> 24), (this.promised_id >> 16), (this.promised_id >> 8), this.promised_id]), this.payload, new Buffer(this.padding_length)]);
+    else
+      this.payload = Buffer.concat([new Buffer([(this.promised_id >> 24), (this.promised_id >> 16), (this.promised_id >> 8), this.promised_id]), this.payload]);
     return super.get_payload();
   }
 }
