@@ -1,7 +1,2 @@
 ignore:
   - "dist"
-  - "dist/constants.js"
-  - "dist/error.js"
-  - "dist/hpack.js"
-  - "dist/index.js"
-  - "dist/http2.js"
