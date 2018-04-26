@@ -2,7 +2,7 @@
   "name": "cheath2.js",
   "version": "1.2.0",
   "description": "",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "start": "nodemon --exec babel-node server.js",
     "test": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov",
