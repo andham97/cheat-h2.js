@@ -24,6 +24,9 @@ export default class DataFrame extends Frame {
   }
 
   get_payload(){
+    if(this.flags.PADDED){
+      this.payload = Buffer.concat([new Buffer([this.padding]), this.payload, new Buffer(this.padding)]);
+    }
     return super.get_payload();
   }
 }

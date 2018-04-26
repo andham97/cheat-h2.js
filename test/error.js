@@ -9,5 +9,5 @@ describe('Error class testing', () => {
     let stream_id = 1;
     let new_stream_error = new StreamError(error, msg, stream_id);
     chai.expect(new_stream_error.stream_id).to.equal(stream_id);
-  })
-})
+  });
+});
