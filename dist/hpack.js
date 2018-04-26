@@ -42,22 +42,6 @@ var header_field_type_spec = [{
   mask: 0x20
 }];
 
-var literal_headers = {
-  /*'content-length': true,
-  'content-MD5': true,
-  'forwarded': true,
-  'referer': true*/
-};
-
-var literal_headers_never_indexed = {
-  /*'set-cookie': true,
-  'authorization': true,
-  'from': true,
-  'proxy-authorization': true,
-  'etag': true,
-  'location': true*/
-};
-
 var read_byte = function read_byte(buffer) {
   return buffer[buffer.current_byte++];
 };
@@ -124,6 +108,10 @@ var decode_string = function decode_string(buffer) {
   if (!(buffer instanceof Buffer)) throw new _error.ConnectionError(_constants.ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   var sByte = buffer[buffer.current_byte];
   var length = decode_integer(buffer, 7);
+  console.log(buffer);
+  console.log(buffer.length);
+  console.log(buffer.current_byte);
+  console.log(length);
   if (buffer.length < buffer.current_byte + length) throw new _error.ConnectionError(_constants.ErrorCodes.COMPRESSION_ERROR, 'invalid string representation');
   if ((sByte & 0x80) != 0) return huffman_decode(read_bytes(buffer, length)).toString();else return read_bytes(buffer, length).toString();
 };
@@ -227,9 +215,6 @@ var HeaderTable = function () {
     value: function get(index) {
       if (typeof index != 'number') throw new _error.ConnectionError(_constants.ErrorCodes.INTERNAL_ERROR, 'invalid argument');
       if (index < 1 || index > static_table.length + this.entries.length) throw new _error.ConnectionError(_constants.ErrorCodes.INTERNAL_ERROR, 'invalid argument');
-
-      console.log('index: ' + index);
-      console.log('static length: ' + static_table.length);
       if (index < static_table.length) return static_table[index - 1];else return this.entries[index - static_table.length - 1];
     }
   }, {
@@ -303,44 +288,18 @@ var Context = function () {
           buffer = Buffer.concat([buffer, header_field_indexed_buffer]);
         } else {
           if (table_lookup.index != 0) {
-            if (literal_headers_never_indexed[header.name]) {
-              var header_field_literal_never_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_NEVER].prefix);
-              header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
-              var header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, header_field_literal_never_index_buffer, header_field_literal_never_value_buffer]);
-            } else if (literal_headers[header.name]) {
-              var header_field_literal_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL].prefix);
-              header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
-              var header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, header_field_literal_index_buffer, header_field_literal_value_buffer]);
-            } else {
-              var header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
-              header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
-              var header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
-              this.header_table.add(header);
-            }
+            var header_field_literal_inc_index_buffer = encode_integer(table_lookup.index, header_field_type_spec[header_field_type.LITERAL_INC].prefix);
+            header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+            var header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, header_field_literal_inc_index_buffer, header_field_literal_inc_value_buffer]);
+            this.header_table.add(header);
           } else {
-            if (literal_headers_never_indexed[header.name]) {
-              var _header_field_literal_never_index_buffer = new Buffer(1);
-              _header_field_literal_never_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_NEVER].mask;
-              var header_field_literal_never_name_buffer = encode_string(new Buffer(header.name), true);
-              var _header_field_literal_never_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, _header_field_literal_never_index_buffer, header_field_literal_never_name_buffer, _header_field_literal_never_value_buffer]);
-            } else if (literal_headers[header.name]) {
-              var _header_field_literal_index_buffer = new Buffer(1);
-              _header_field_literal_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL].mask;
-              var header_field_literal_name_buffer = encode_string(new Buffer(header.name), true);
-              var _header_field_literal_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, _header_field_literal_index_buffer, header_field_literal_name_buffer, _header_field_literal_value_buffer]);
-            } else {
-              var _header_field_literal_inc_index_buffer = new Buffer(1);
-              _header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
-              var header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
-              var _header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
-              buffer = Buffer.concat([buffer, _header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, _header_field_literal_inc_value_buffer]);
-              this.header_table.add(header);
-            }
+            var _header_field_literal_inc_index_buffer = new Buffer(1);
+            _header_field_literal_inc_index_buffer[0] |= header_field_type_spec[header_field_type.LITERAL_INC].mask;
+            var header_field_literal_inc_name_buffer = encode_string(new Buffer(header.name), true);
+            var _header_field_literal_inc_value_buffer = encode_string(new Buffer(header.value), true);
+            buffer = Buffer.concat([buffer, _header_field_literal_inc_index_buffer, header_field_literal_inc_name_buffer, _header_field_literal_inc_value_buffer]);
+            this.header_table.add(header);
           }
         }
       }
@@ -428,23 +387,3 @@ var hpack_methods = exports.hpack_methods = {
 for (var i = 0; i < static_table.length; i++) {
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
-/**
-let b = new Context()
-let entry = [new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')]
-console.log(b.compress(entry));
-
-let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96])
-console.log(b.decompress(buffer));
-*/
-/**
-let a = new Context()
-let buffer = encode_integer(5, 4)
-buffer[0] |= 0x20;
-buffer = Buffer.concat([buffer]);
-buffer.current_byte = 0;
-console.log(a.header_table.max_size)
-console.log(a.decompress(buffer));
-console.log(a.header_table.max_size)
-*/
-
-//const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

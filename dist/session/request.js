@@ -22,13 +22,15 @@ var Request = function Request(headers, data) {
   if (this.headers[':method']) {
     if (this.headers[':method'] == 'POST' && this.headers['content-length'] > 0) {
       if (this.headers['content-encoding']) throw new _error.StreamError(_constants.ErrorCodes.INTERNAL_ERROR, 'non-supported encoding type');
+      console.log(data.toString());
       var body = decodeURIComponent(data.toString());
       body = body.split('&');
       this.body = {};
       body.forEach(function (element) {
         var pair = element.split('=');
-        _this.body[pair[0]] = pair[1];
+        _this.body[pair[0]] = pair[1].split('+').join(' ');
       });
+      console.log(this.body);
     } else if (this.headers[':method'] == 'GET' && this.headers[':path']) {
       var path_query = this.headers[':path'].split('?');
       this.headers[':path'] = path_query[0];

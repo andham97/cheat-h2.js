@@ -11,4 +11,4 @@ branches:
   - master
 
 script:
-  - npm test
+  - npm run tst

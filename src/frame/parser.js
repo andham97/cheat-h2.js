@@ -19,7 +19,7 @@ export default class Parser {
     let type = data.readUInt8(3);
     let flags = data.readUInt8(4);
     let stream_id = data.readUInt32BE(5) & 0x7fffffff;
-    let payload = data.slice(9);
+    let payload = data.slice(9, length + 9);
     if(payload.length != length)
       throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'non-matching payload length. Header specified: ' + length + ', actual: ' + payload.length);
     let pref = {

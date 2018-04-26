@@ -37,9 +37,9 @@ var SessionManager = function (_EventEmitter) {
       post: {},
       head: {}
     };
+    _this.middlewares = [];
 
     _this.on('session_close', _this.session_close);
-    _this.add_session({ on: function on() {}, write: function write(data) {} });
     return _this;
   }
 
@@ -53,8 +53,8 @@ var SessionManager = function (_EventEmitter) {
     key: 'get_handlers',
     value: function get_handlers(method, path) {
       var handlers = this.paths[method.toLowerCase()][path];
-      if (!handlers || handlers.length == 0) return [this.request_404_handler];
-      return handlers;
+      if (!handlers || handlers.length == 0) return this.middlewares.concat([this.request_404_handler]);
+      return this.middlewares.concat(handlers);
     }
   }, {
     key: 'session_close',
@@ -74,6 +74,17 @@ var SessionManager = function (_EventEmitter) {
     value: function register_post(path, handler) {
       if (!this.paths.post[path]) this.paths.post[path] = [];
       this.paths.post[path].push(handler);
+    }
+  }, {
+    key: 'register_middleware',
+    value: function register_middleware(handler) {
+      this.middlewares.push(handler);
+    }
+  }, {
+    key: 'register_path',
+    value: function register_path(path, handler) {
+      this.register_get(path, handler);
+      this.register_post(path, handler);
     }
   }, {
     key: 'request_404_handler',

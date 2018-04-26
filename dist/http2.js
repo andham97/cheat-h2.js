@@ -21,15 +21,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var session_manager = void 0;
 
 var http2 = function () {
-  function http2(opts) {
+  function http2(options) {
     _classCallCheck(this, http2);
 
-    if (!opts) return;
-    this.key = opts.key;
-    this.cert = opts.cert;
+    if (!options || !options.key || !options.cert) throw new Error('Need private key and public certificate for server initiation');
+    this.key = options.key;
+    this.cert = options.cert;
     session_manager = new _manager2.default();
-    opts.ALPNProtocols = ['h2'];
-    this.server = _tls2.default.createServer(opts, function (socket) {
+    options.ALPNProtocols = ['h2'];
+    this.server = _tls2.default.createServer(options, function (socket) {
       session_manager.add_session(socket);
     });
   }
@@ -37,12 +37,19 @@ var http2 = function () {
   _createClass(http2, [{
     key: 'get',
     value: function get(path, handler) {
+      if (!path || !handler) throw new Error('Path or handler not specified');
       session_manager.register_get(path, handler);
     }
   }, {
     key: 'post',
     value: function post(path, handler) {
+      if (!path || !handler) throw new Error('Path or handler not specified');
       session_manager.register_post(path, handler);
+    }
+  }, {
+    key: 'use',
+    value: function use(path, handler) {
+      if (!handler) session_manager.register_middleware(path);else session_manager.register_path(path, handler);
     }
   }, {
     key: 'listen',
