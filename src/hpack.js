@@ -758,11 +758,6 @@ export default class Context {
           let new_max_header_table_size = decode_integer(buffer, 5);
           this.header_table.set_max_size(new_max_header_table_size);
           break;
-        default:
-          console.log('COMPRESSION ERROR');
-          console.log(buffer.current_byte);
-          console.log(buffer[buffer.current_byte].toString(16));
-          throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'unknown compression bits');
       }
     }
     return headers;
@@ -794,7 +789,7 @@ console.log(b.compress(entry));
 let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96])
 console.log(b.decompress(buffer));
 */
-
+/**
 let a = new Context()
 let buffer = encode_integer(5, 4)
 buffer[0] |= 0x20;
@@ -803,12 +798,7 @@ buffer.current_byte = 0;
 console.log(a.header_table.max_size)
 console.log(a.decompress(buffer));
 console.log(a.header_table.max_size)
-
-/*
-let a = new Context()
-let buffer = new Buffer([0x00]);
-buffer = Buffer.concat([buffer, encode_string(new Buffer([0x4f, 0x64, 0x61]), true), encode_string(new Buffer([0x4f]), true)]);
-buffer.current_byte = 0;
-console.log(a.decompress(buffer));
 */
+
+
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

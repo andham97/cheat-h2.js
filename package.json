@@ -6,6 +6,7 @@
   "scripts": {
     "start": "nodemon --exec babel-node server.js",
     "test": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov",
+    "tst": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov -t db468179-4586-4d2e-abb7-c2046e0a50da",
     "flow": "flow"
   },
   "repository": {

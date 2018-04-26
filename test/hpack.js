@@ -284,6 +284,5 @@ describe('decompress function', () => {
     let old_table_size = a.header_table.max_size;
     let decompress = a.decompress(buffer);
     chai.expect(a.header_table.max_size).to.deep.equal(new_size);
-
   });
 });
