@@ -721,6 +721,7 @@ export default class Context {
           break;
         case header_field_type.LITERAL_INC:
           if((fByte & 0x3f) != 0){
+            console.log('1');
             let index = decode_integer(buffer, 6);
             let header_field = this.header_table.get(index);
             let value = decode_string(buffer);
@@ -729,6 +730,7 @@ export default class Context {
             this.header_table.add(entry);
           }
           else {
+            console.log('2');
             buffer.current_byte++;
             let name = decode_string(buffer);
             let value = decode_string(buffer);
@@ -792,8 +794,13 @@ console.log(b.compress(entry));
 let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96])
 console.log(b.decompress(buffer));
 */
-let a = new HeaderTable()
-let name = ':method'
-let value = 'GET'
-console.log(a.find(name, value))
+
+
+
+let a = new Context()
+let buffer = encode_integer(2, 6);
+buffer[0] |= 0x40;
+buffer = Buffer.concat([buffer, encode_string(new Buffer([0x4f, 0x64, 0x61]), true)]);
+buffer.current_byte = 0;
+console.log(a.decompress(buffer));
 //const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

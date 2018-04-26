@@ -31,13 +31,13 @@ describe('testing methods attached to header table', () => {
     let index = 0;
     chai.expect(() => new hpack_methods.HeaderTable().get(index)).to.throw('invalid');
   });
-/*
+
   it('should find entry, given name and value', () => {
     let name = ':method';
     let value = 'GET';
-    chai.expect(new hpack_methods.HeaderTable().find(name, value)).to.equal();
+    chai.expect(new hpack_methods.HeaderTable().find(name, value)).to.deep.equal({index: 2, exact: true});
   });
-  */
+
   it('should set new max size', () => {
     let new_size = 400;
     chai.expect(new hpack_methods.HeaderTable().set_max_size(new_size)).to.equal();
@@ -242,5 +242,12 @@ describe('decompress function', () => {
   it('should decomrpess entries, array with several entries', () => {
     let buffer = new Buffer([0x82, 0x81, 0x85, 0x8f, 0x96]);
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'GET'), new Entry(':authority', ''), new Entry(':path', '/index.html'), new Entry('accept-charset', ''), new Entry('allow', '')]);
+  });
+
+  it('should decompress entries, literal header field with incremental indexing', () => {
+    let buffer = hpack_methods.encode_integer(2, 6);
+    buffer[0] |= 0x40;
+    buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true)]);
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'Oda')])
   });
 });
