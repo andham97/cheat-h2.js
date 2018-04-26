@@ -25,6 +25,7 @@ A HTTP/2 implementation for Node.js conforming to [RFC7540](https://tools.ietf.o
 3. DOS security see section 10.5
 4. Server authority see section 10.1
 5. IE attach see section 10.3
+6. Make logging optional
 
 ## Installation
 cheat-h2.js is available through the NPM registry.

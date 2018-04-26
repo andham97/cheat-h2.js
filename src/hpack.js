@@ -737,3 +737,5 @@ export const hpack_methods = {
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
+
+console.log(new Context().compress([new Entry(':method', 'GET'), new Entry(':path', '/')]));
