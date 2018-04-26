@@ -28,6 +28,7 @@ var Request = function Request(headers, data) {
       this.body = {};
       body.forEach(function (element) {
         var pair = element.split('=');
+        if (pair.length != 2) return;
         _this.body[pair[0]] = pair[1].split('+').join(' ');
       });
       console.log(this.body);
