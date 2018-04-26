@@ -40,6 +40,4 @@ describe('Push promise frame', () => {
       new_frame.payload = new Buffer(8);
       chai.expect(new_frame.payload).to.deep.equal(new Buffer(8))
   });
-
-
 });

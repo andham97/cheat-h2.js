@@ -23,7 +23,6 @@ export default class PushPromiseFrame extends Frame{
   }
 
   get_payload(){
-    console.log(this);
     if(this.flags.PADDED)
       this.payload = Buffer.concat([new Buffer([this.padding_length]),
       new Buffer([(this.promised_id >> 24), (this.promised_id >> 16), (this.promised_id >> 8), this.promised_id]),
