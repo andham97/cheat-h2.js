@@ -18,7 +18,7 @@ export default class PingFrame extends Frame {
     if(!this.payload)
       this.payload = new Buffer(8);
     else if(this.payload.length != 8)
-      throw new ConnectionError(ErrorCodes.FRAME_SIZE_ERROR, 'non-8 octet frame size');
+      this.payload = new Buffer(8);
     return super.get_payload();
   }
 }

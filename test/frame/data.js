@@ -1,5 +1,5 @@
 import chai from 'chai';
-import DataFrame from '../../src/frame/frame';
+import DataFrame from '../../src/frame/data';
 
 describe('Dataframe', () => {
   it('should create new dataframe', () => {
