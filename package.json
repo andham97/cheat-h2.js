@@ -2,12 +2,13 @@
   "name": "cheath2.js",
   "version": "1.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "start": "nodemon --exec babel-node server.js",
     "test": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov",
     "tst": "babel-node ./node_modules/babel-istanbul/lib/cli cover ./node_modules/mocha/bin/_mocha && codecov -t db468179-4586-4d2e-abb7-c2046e0a50da",
-    "flow": "flow"
+    "flow": "flow",
+    "build": "babel src --out-dir dist"
   },
   "repository": {
     "type": "git",
