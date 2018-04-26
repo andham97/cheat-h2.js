@@ -3,9 +3,9 @@
 [![Build Status](https://travis-ci.org/andham97/cheat-h2.js.svg?branch=master)](https://travis-ci.org/andham97/cheat-h2.js)
 [![codecov](https://codecov.io/gh/andham97/cheat-h2.js/branch/master/graph/badge.svg)](https://codecov.io/gh/andham97/cheat-h2.js)
 
-# Introduction
+## Introduction
 
-# Implemented functionality
+## Implemented functionality
 1. TLS
 2. Connection preface
 3. Datawrapper from frames
@@ -16,7 +16,7 @@
 8. Connection management
 9. Cross protocols attach
 
-# TODO
+## TODO
 1. Error handeling stream concurancy
 2. Stream priority
 3. Server push
@@ -28,25 +28,14 @@
 9. Server authority see section 10.1
 10. IE attach see section 10.3
 
-# Usage
-
-
-# Installation
-cheat-h2.js is available through the NPM registry.
-Before installing note that Node.js 9.3.0 or higher is required.
-Installation is done using the `npm install` command:
-```bash
-$ npm install cheath2.js
-```
-
-# Basic usage
+## Usage
 ```javascript
 import cheath2 from 'cheath2.js';
 import fs from 'fs';
 
 let server = new cheath2({
   key: fs.readFileSync('<directory of private-key>'),
-  cert: fs.readFileSync('<directory of publick-cert>')
+  cert: fs.readFileSync('<directory of public-cert>')
 });
 
 server.get('/', (req, res) => {
@@ -57,7 +46,15 @@ server.get('/', (req, res) => {
 server.listen(8000);
 ```
 
-# Tests
+## Installation
+cheat-h2.js is available through the NPM registry.
+Before installing note that Node.js 9.3.0 or higher is required.
+Installation is done using the `npm install` command:
+```bash
+$ npm install cheath2.js
+```
+
+## Tests
 
 
-# API documentation
+## API documentation
