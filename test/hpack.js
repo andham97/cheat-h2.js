@@ -23,6 +23,14 @@ describe('testing methods attached to header table', () => {
     chai.expect(new hpack_methods.HeaderTable().add(entry)).to.deep.equal();
   });
 
+  it('should add entry', () => {
+    let a = new hpack_methods.HeaderTable();
+    a.max_size = 100;
+    let adding = a.add(new Entry('djsibvfeibvrvhubdfhjbsvhjdfbhvjbfdhsjvbfhj', 'fvbfdibvfhbvhjrbvhjrdshdisiiduhsiudhishduicbdiusbvhjfrh'))
+    chai.expect(adding).to.equal();
+
+  })
+
   it('should return invalid arrgument, getting index', () => {
     let index = '1';
     chai.expect(() => new hpack_methods.HeaderTable().get(index)).to.throw('invalid');

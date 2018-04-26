@@ -552,6 +552,7 @@ class HeaderTable {
     if(!(entry instanceof Entry))
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(entry.size > this.max_size){
+      console.log('hahaha')
       this.size = 0;
       this.entries = [];
       return;
@@ -562,7 +563,6 @@ class HeaderTable {
     }
     this.entries = [entry].concat(this.entries);
     this.size += entry.size;
-    console.log(this.size)
   }
 
   get(index){
@@ -612,14 +612,11 @@ class HeaderTable {
     new_size = Math.min(new_size, 4096);
     if(this.max_size == new_size)
       return;
-    console.log(this.size)
-    console.log(new_size)
     while(this.size > new_size){
       this.size -= this.entries[this.entries.length - 1].size;
       this.entries.splice(this.entries.length - 1, 1);
     }
     this.max_size = new_size;
-    console.log(this.max_size)
   }
 }
 
@@ -724,7 +721,6 @@ export default class Context {
           headers.push(header);
           break;
         case header_field_type.LITERAL_INC:
-        console.log('1')
           if((fByte & 0x3f) != 0){
             let index = decode_integer(buffer, 6);
             let header_field = this.header_table.get(index);
@@ -758,7 +754,6 @@ export default class Context {
           }
           break;
         case header_field_type.HEADER_TABLE_SIZE:
-          console.log('')
           let new_max_header_table_size = decode_integer(buffer, 5);
           this.header_table.set_max_size(new_max_header_table_size);
           break;
