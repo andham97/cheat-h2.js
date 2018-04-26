@@ -21,7 +21,7 @@ export default class ControlStream extends IStream {
         let ack_settings_frame = new SettingsFrame();
         ack_settings_frame.stream_id = 0;
         ack_settings_frame.flags.ACK = true;
-        this.session.send_frame(ack_settings_frame);
+        this.session.transmit_frame(ack_settings_frame);
         this.session.in_settings.update_settings(frame);
         this.session.in_context.set_max_table_size(this.session.in_settings.settings.SETTINGS_HEADER_TABLE_SIZE);
         break;
@@ -37,7 +37,7 @@ export default class ControlStream extends IStream {
         ack_ping_frame.flags.ACK = true;
         ack_ping_frame.payload = frame.payload;
         ack_ping_frame.stream_id = 0;
-        this.session.send_frame(ack_ping_frame);
+        this.session.transmit_frame(ack_ping_frame);
         break;
       default:
         throw new ConnectionError(ErrorCodes.PROTOCOL_ERROR, 'invalid frame recieved: ' + FrameTypes.keys[frame.type], this.stream_id);

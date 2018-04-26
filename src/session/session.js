@@ -5,9 +5,11 @@ import WindowUpdateFrame from '../frame/window_update';
 import DataFrame from '../frame/data';
 import GoawayFrame from '../frame/go_away';
 import RSTStreamFrame from '../frame/rst_stream';
+import PushPromiseFrame from '../frame/push_promise';
 import Settings from './settings';
 import Parser from '../frame/parser';
 import IStream from './istream';
+import OStream from './ostream';
 import ControlStream from './cstream';
 import {SettingsEntries, ErrorCodes, FrameTypes, FrameFlags, StreamState} from '../constants';
 import {ConnectionError, StreamError} from '../error';
@@ -42,6 +44,7 @@ export default class Session extends EventEmitter {
   out_settings;
   flow_control;
   headers = {};
+  next_ostream_id = 2;
 
 
   constructor(sock, id, mgr){
@@ -60,8 +63,8 @@ export default class Session extends EventEmitter {
 
     this.socket.on('data', (data) => {
       if(!this.is_init && Buffer.compare(data.slice(0, 24), init_buffer) == 0){
-        this.send_frame(init_settings);
-        this.send_frame(init_window_update);
+        this.transmit_frame(init_settings);
+        this.transmit_frame(init_window_update);
         this.is_init = true;
         if(data.length == 24)
           return;
@@ -124,7 +127,37 @@ export default class Session extends EventEmitter {
     });
   }
 
-  send_frame(frame){
+  send_frame_istream(frame){
+    if(frame.stream_id % 2 == 0 && frame.stream_id != 0){
+      let stream = this.streams[frame.stream_id];
+      if(stream)
+        return stream.recieve_frame(frame);
+      else {
+        stream = new OStream(frame.stream_id, this);
+        this.streams[frame.stream_id] = stream;
+        return stream.recieve_frame(frame);
+      }
+    }
+    else {
+      if(frame instanceof PushPromiseFrame){
+        let stream = this.streams[frame.promised_id];
+        if(stream)
+          stream.stream_state = StreamState.STREAM_RESERVED_LOCAL;
+        else {
+          stream = new OStream(frame.promised_id, this);
+          this.streams[frame.stream_id] = stream;
+          stream.stream_state = StreamState.STREAM_RESERVED_LOCAL;
+        }
+      }
+      this.transmit_frame(frame);
+    }
+  }
+
+  send_frame_ostream(frame){
+    this.transmit_frame(frame);
+  }
+
+  transmit_frame(frame){
     console.log();
     console.log('SENDING');
     console.log(frame);
@@ -150,13 +183,13 @@ export default class Session extends EventEmitter {
       error_frame.stream_id = 0;
       error_frame.error_code = error.error_code;
       error_frame.debug_data = new Buffer(error.message, 'utf-8');
-      this.send_frame(error_frame);
+      this.transmit_frame(error_frame);
     }
     else if(error.type == 0x2){
       let error_frame = new RSTStreamFrame();
       error_frame.stream_id = error.stream_id;
       error_frame.error_code = error.error_code;
-      this.send_frame(error_frame);
+      this.transmit_frame(error_frame);
     }
     else {
       console.log('UNDEFINED ERROR TYPE: ' + error.constructor.name);
