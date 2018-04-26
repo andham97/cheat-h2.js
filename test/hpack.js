@@ -28,8 +28,15 @@ describe('testing methods attached to header table', () => {
     a.max_size = 100;
     let adding = a.add(new Entry('djsibvfeibvrvhubdfhjbsvhjdfbhvjbfdhsjvbfhj', 'fvbfdibvfhbvhjrbvhjrdshdisiiduhsiudhishduicbdiusbvhjfrh'))
     chai.expect(adding).to.equal();
+  });
 
-  })
+  it('SHOULD ADD NEW ENTY _ TESTING', () => {
+    let a = new hpack_methods.HeaderTable();
+    a.max_size = 150;
+    a.add(new Entry('oda er kul', 'true'));
+    let adding = a.add(new Entry('djsibvfeibvrvhubdfhjbsvhjdfbhvjbfdbfhj', 'fvbfdibvfhbvhjrbvhjrisiiduhsiudhishduicbdiusbvhjfrh'))
+    chai.expect(a.size).to.equal(121);
+  });
 
   it('should return invalid arrgument, getting index', () => {
     let index = '1';

@@ -549,10 +549,12 @@ class HeaderTable {
   }
 
   add(entry){
+    console.log('entry size: ' + entry.size);
+    console.log('this.size: ' + this.size);
+    console.log('max_size: ' + this.max_size)
     if(!(entry instanceof Entry))
       throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
     if(entry.size > this.max_size){
-      console.log('hahaha')
       this.size = 0;
       this.entries = [];
       return;
