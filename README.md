@@ -32,11 +32,32 @@
 
 
 # Installation
+cheat-h2.js is available through the NPM registry.
+Before installing note that Node.js 9.3.0 or higher is required.
+Installation is done using the `npm install` command:
+```bash
+$ npm install cheath2.js
+```
+
+# Basic usage
+```javascript
+import cheath2 from 'cheath2.js';
+import fs from 'fs';
+
+let server = new cheath2({
+  key: fs.readFileSync('<directory of private-key>'),
+  cert: fs.readFileSync('<directory of publick-cert>')
+});
+
+server.get('/', (req, res) => {
+  res.headers['content-encoding'] = 'text/plain';
+  res.status(200).send('Hello world!');
+});
+
+server.listen(8000);
+```
 
 # Tests
 
 
 # API documentation
-```javascript
-let server = new HTTP2();
-```
