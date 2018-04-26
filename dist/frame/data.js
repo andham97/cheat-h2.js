@@ -49,6 +49,9 @@ var DataFrame = function (_Frame) {
   _createClass(DataFrame, [{
     key: 'get_payload',
     value: function get_payload() {
+      if (this.flags.PADDED) {
+        this.payload = Buffer.concat([new Buffer([this.padding]), this.payload, new Buffer(this.padding)]);
+      }
       return _get(DataFrame.prototype.__proto__ || Object.getPrototypeOf(DataFrame.prototype), 'get_payload', this).call(this);
     }
   }]);

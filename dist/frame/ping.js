@@ -41,7 +41,7 @@ var PingFrame = function (_Frame) {
   _createClass(PingFrame, [{
     key: 'get_payload',
     value: function get_payload() {
-      if (!this.payload) this.payload = new Buffer(8);else if (this.payload.length != 8) throw new _error.ConnectionError(_constants.ErrorCodes.FRAME_SIZE_ERROR, 'non-8 octet frame size');
+      if (!this.payload) this.payload = new Buffer(8);else if (this.payload.length != 8) this.payload = new Buffer(8);
       return _get(PingFrame.prototype.__proto__ || Object.getPrototypeOf(PingFrame.prototype), 'get_payload', this).call(this);
     }
   }]);

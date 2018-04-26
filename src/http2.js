@@ -8,24 +8,35 @@ export default class http2 {
   cert;
   server;
 
-  constructor(opts){
-    if(!opts)
-      return;
-    this.key = opts.key;
-    this.cert = opts.cert;
+  constructor(options){
+    if(!options || !options.key || !options.cert)
+      throw new Error('Need private key and public certificate for server initiation');
+    this.key = options.key;
+    this.cert = options.cert;
     session_manager = new SessionManager();
-    opts.ALPNProtocols = ['h2'];
-    this.server = tls.createServer(opts, (socket) => {
+    options.ALPNProtocols = ['h2'];
+    this.server = tls.createServer(options, (socket) => {
       session_manager.add_session(socket);
     });
   }
 
   get(path, handler){
+    if(!path || !handler)
+      throw new Error('Path or handler not specified');
     session_manager.register_get(path, handler);
   }
 
   post(path, handler){
+    if(!path || !handler)
+      throw new Error('Path or handler not specified');
     session_manager.register_post(path, handler);
+  }
+
+  use(path, handler){
+    if(!handler)
+      session_manager.register_middleware(path);
+    else
+      session_manager.register_path(path, handler);
   }
 
   listen(port) {

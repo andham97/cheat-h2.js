@@ -49,7 +49,7 @@ var PriorityFrame = function (_Frame) {
       if (stream_dependency < Math.pow(2, 31)) {
         if (this.exclusive) stream_dependency |= 0x80000000;
         if (this.weight > 0xff) throw new _error.ConnectionError(_constants.ErrorCodes.FRAME_SIZE_ERROR, 'weight extends 255');
-        this.payload = Buffer.concat(new Buffer([stream_dependency >> 24, stream_dependency >> 16, stream_dependency >> 8, stream_dependency, weight]), payload);
+        this.payload = Buffer.concat([new Buffer([stream_dependency >> 24, stream_dependency >> 16, stream_dependency >> 8, stream_dependency, this.weight]), this.payload]);
       } else {
         throw new _error.ConnectionError(_constants.ErrorCodes.FRAME_SIZE_ERROR, 'stream_dependency extends 31 byte');
       }

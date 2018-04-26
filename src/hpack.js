@@ -431,6 +431,10 @@ const decode_string = (buffer) => {
     throw new ConnectionError(ErrorCodes.INTERNAL_ERROR, 'invalid argument');
   let sByte = buffer[buffer.current_byte];
   let length = decode_integer(buffer, 7);
+  console.log(buffer);
+  console.log(buffer.length);
+  console.log(buffer.current_byte);
+  console.log(length);
   if(buffer.length < buffer.current_byte + length)
     throw new ConnectionError(ErrorCodes.COMPRESSION_ERROR, 'invalid string representation');
   if((sByte & 0x80) != 0)
@@ -733,5 +737,3 @@ export const hpack_methods = {
 for(let i = 0; i < static_table.length; i++){
   static_table[i] = new Entry(static_table[i][0], static_table[i][1]);
 }
-
-//const testBuffer = new Buffer([0x82, 0x84, 0x87, 0x41, 0x8a, 0xa0, 0xe4, 0x1d, 0x13, 0x9d, 0x9, 0xb8, 0xf0, 0x0, 0xf, 0x7a, 0x88, 0x25, 0xb6, 0x50, 0xc3, 0xab, 0xb6, 0xd2, 0xe0, 0x53, 0x3, 0x2a, 0x2f, 0x2a]);

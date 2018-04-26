@@ -69,7 +69,7 @@ var Parser = function () {
       var type = data.readUInt8(3);
       var flags = data.readUInt8(4);
       var stream_id = data.readUInt32BE(5) & 0x7fffffff;
-      var payload = data.slice(9);
+      var payload = data.slice(9, length + 9);
       if (payload.length != length) throw new _error.ConnectionError(_constants.ErrorCodes.PROTOCOL_ERROR, 'non-matching payload length. Header specified: ' + length + ', actual: ' + payload.length);
       var pref = {
         flags: flags,

@@ -9,11 +9,11 @@ export default class SessionManager extends EventEmitter {
     post: {},
     head: {}
   };
+  middlewares = [];
 
   constructor(){
     super();
     this.on('session_close', this.session_close);
-    this.add_session({on: ()=> {}, write: (data)=>{}});
   }
 
   add_session(socket){
@@ -24,8 +24,8 @@ export default class SessionManager extends EventEmitter {
   get_handlers(method, path){
     let handlers = this.paths[method.toLowerCase()][path];
     if(!handlers || handlers.length == 0)
-      return [this.request_404_handler];
-    return handlers;
+      return this.middlewares.concat([this.request_404_handler]);
+    return this.middlewares.concat(handlers);
   }
 
   session_close(session){
@@ -45,6 +45,15 @@ export default class SessionManager extends EventEmitter {
     if(!this.paths.post[path])
       this.paths.post[path] = [];
     this.paths.post[path].push(handler);
+  }
+
+  register_middleware(handler){
+    this.middlewares.push(handler);
+  }
+
+  register_path(path, handler){
+    this.register_get(path, handler);
+    this.register_post(path, handler);
   }
 
   request_404_handler(request, response){

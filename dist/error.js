@@ -38,15 +38,27 @@ var StreamError = exports.StreamError = function (_Error2) {
   function StreamError(error, msg, stream_id) {
     _classCallCheck(this, StreamError);
 
+    console.log('1');
+
     var _this2 = _possibleConstructorReturn(this, (StreamError.__proto__ || Object.getPrototypeOf(StreamError)).call(this, _constants.ErrorCodes.keys[error] + (typeof msg != 'undefined' ? ': ' + msg : '')));
 
     _this2.type = 0x2;
 
+    console.log('2');
     Error.captureStackTrace(_this2, StreamError);
+    console.log('3');
     _this2.error_code = error;
+    console.log('4');
     _this2.stream_id = stream_id || -1;
     return _this2;
   }
 
   return StreamError;
 }(Error);
+/*
+let error = ErrorCodes.INTERNAL_ERROR;
+let msg = "invalid";
+let stream_id = 1;
+let new_stream_error = new StreamError(error, msg, stream_id)
+console.log(new_stream_error)
+*/

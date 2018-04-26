@@ -256,8 +256,7 @@ var IStream = function (_Stream) {
       var headers = this.session.in_context.decompress(this.current_header_buffer);
       this.session.update_headers(headers);
       var request = new _request2.default(this.session.headers, this.current_data_buffer);
-      var response = new _response2.default(this.session.headers);
-      console.log(request);
+      var response = new _response2.default();
       var method = request.headers[':method'];
       var path = request.headers[':path'];
       var handlers = this.session.manager.get_handlers(method, path);
@@ -301,6 +300,8 @@ var IStream = function (_Stream) {
   }, {
     key: 'convert_response',
     value: function convert_response(request, response) {
+      var _this5 = this;
+
       if (!response.payload) throw new Error('no response to client');
       response.headers['content-length'] = response.payload.length;
       var frames = [];
@@ -316,27 +317,33 @@ var IStream = function (_Stream) {
         if (a.name[0] == ':' && b.name[0] != ':') return -1;else if (a.name[0] != ':' && b.name[0] == ':') return 1;
         return 0;
       });
-      for (var i = 0; i < response.required_paths.length; i++) {
+
+      var _loop = function _loop(i) {
         var path = response.required_paths[i];
-        var current_headers = _extends({}, this.session.headers);
+        var current_headers = _extends({}, _this5.session.headers);
         current_headers[':path'] = '/index.js';
         var current_request = new _request2.default(current_headers, new Buffer(0));
-        var current_response = new _response2.default(current_headers);
-        var next_handler = this.generate_handler_chain(current_request, current_response, this.session.manager.get_handlers(path.method, path.path));
+        var current_response = new _response2.default();
+        var next_handler = _this5.generate_handler_chain(current_request, current_response, _this5.session.manager.get_handlers(path.method, path.path));
         if (next_handler) next_handler();
         var push_promise = new _push_promise2.default();
         push_promise.flags.END_HEADERS = true;
-        push_promise.promised_id = 2; // TODO: fix ostream
-        push_promise.stream_id = this.stream_id;
-        push_promise.payload = this.session.out_context.compress(Object.entries(current_headers).map(function (header) {
+        push_promise.promised_id = _this5.session.next_ostream_id;
+        _this5.session.next_ostream_id += 2;
+        push_promise.stream_id = _this5.stream_id;
+        push_promise.payload = _this5.session.out_context.compress(Object.entries(current_headers).map(function (header) {
           return new _hpack.Entry(header[0], header[1]);
         }));
-        var current_push_frames = this.convert_response(current_request, current_response);
+        var current_push_frames = _this5.convert_response(current_request, current_response);
         current_push_frames.forEach(function (frame) {
-          frame.stream_id = 2;
+          frame.stream_id = push_promise.promised_id;
         });
         push_frames = push_frames.concat(current_push_frames);
         frames.push(push_promise);
+      };
+
+      for (var i = 0; i < response.required_paths.length; i++) {
+        _loop(i);
       }
       header_frame.payload = this.session.out_context.compress(headers);
       if (response.payload.length != 0 && request.headers[':method'] != 'HEAD') {
@@ -349,8 +356,10 @@ var IStream = function (_Stream) {
         header_frame.flags.END_STREAM = true;
         frames.push(header_frame);
       }
-      frames = frames.concat(push_frames);
-      return frames;
+      console.log(frames);
+      console.log(push_frames);
+      console.log(frames.slice(0, response.required_paths.length).concat(push_frames).concat(frames.slice(response.required_paths.length)));
+      return frames.slice(0, response.required_paths.length).concat(push_frames).concat(frames.slice(response.required_paths.length));
     }
   }, {
     key: 'send_frame',

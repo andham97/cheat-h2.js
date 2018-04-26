@@ -13,7 +13,6 @@ export default class IStream extends Stream {
   current_data_buffer = new Buffer(0);
   current_header_buffer = new Buffer(0);
   flag_backlog = [];
-  current_response
 
   constructor(id, session){
     super(id, session);
@@ -206,8 +205,7 @@ export default class IStream extends Stream {
     let headers = this.session.in_context.decompress(this.current_header_buffer);
     this.session.update_headers(headers);
     let request = new Request(this.session.headers, this.current_data_buffer);
-    let response = new Response(this.session.headers);
-    console.log(request);
+    let response = new Response();
     let method = request.headers[':method'];
     let path = request.headers[':path'];
     let handlers = this.session.manager.get_handlers(method, path);
@@ -276,18 +274,19 @@ export default class IStream extends Stream {
       let current_headers = {...this.session.headers};
       current_headers[':path'] = '/index.js';
       let current_request = new Request(current_headers, new Buffer(0));
-      let current_response = new Response(current_headers);
+      let current_response = new Response();
       let next_handler = this.generate_handler_chain(current_request, current_response, this.session.manager.get_handlers(path.method, path.path));
       if(next_handler)
         next_handler();
       let push_promise = new PushPromiseFrame();
       push_promise.flags.END_HEADERS = true;
-      push_promise.promised_id = 2; // TODO: fix ostream
+      push_promise.promised_id = this.session.next_ostream_id;
+      this.session.next_ostream_id += 2;
       push_promise.stream_id = this.stream_id;
       push_promise.payload = this.session.out_context.compress(Object.entries(current_headers).map(header => new Entry(header[0], header[1])));
       let current_push_frames = this.convert_response(current_request, current_response);
       current_push_frames.forEach(frame => {
-        frame.stream_id = 2;
+        frame.stream_id = push_promise.promised_id;
       });
       push_frames = push_frames.concat(current_push_frames);
       frames.push(push_promise);
@@ -304,8 +303,10 @@ export default class IStream extends Stream {
       header_frame.flags.END_STREAM = true;
       frames.push(header_frame);
     }
-    frames = frames.concat(push_frames);
-    return frames;
+    console.log(frames);
+    console.log(push_frames);
+    console.log(frames.slice(0, response.required_paths.length).concat(push_frames).concat(frames.slice(response.required_paths.length)));
+    return frames.slice(0, response.required_paths.length).concat(push_frames).concat(frames.slice(response.required_paths.length));
   }
 
   send_frame(frame){
