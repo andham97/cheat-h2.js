@@ -250,4 +250,11 @@ describe('decompress function', () => {
     buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true)]);
     chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry(':method', 'Oda')])
   });
+
+  it('should decompress entries, literal header field with incremental indexing - new entry', () => {
+    let buffer = new Buffer([0x40]);
+    buffer = Buffer.concat([buffer, hpack_methods.encode_string(new Buffer([0x4f, 0x64, 0x61]), true), hpack_methods.encode_string(new Buffer([0x4f]), true)]);
+    buffer.current_byte = 0;
+    chai.expect(new hpack_methods.Context().decompress(buffer)).to.deep.equal([new Entry('Oda', 'O')])
+  });
 });
