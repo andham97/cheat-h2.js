@@ -54,6 +54,12 @@ describe('testing methods attached to header table', () => {
     chai.expect(a.find('hellooo', 'Hammer')).to.deep.equal({index: 62, exact: true});
   });
 
+  it('should find entry, in entries table', () => {
+    let a = new hpack_methods.HeaderTable();
+    a.add(new Entry('hellooo', 'Hammer'));
+    chai.expect(a.find('hellooo', 'Hade')).to.deep.equal({index: 62, exact: false});
+  });
+
   it('should find entry, given name and value', () => {
     let name = ':method';
     let value = 'GET';
